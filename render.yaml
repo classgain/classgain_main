@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: what-next-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: SELLER_URL
+        sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: JSON_BODY_LIMIT
+        value: 10mb
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 300
+      - key: AUTH_RATE_LIMIT_MAX
+        value: 20

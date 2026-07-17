@@ -1,0 +1,157 @@
+import { useState } from 'react';
+
+const initialForm = {
+  name: '',
+  mobile: '',
+  contactDetails: '',
+  studiedClass: '',
+  coursePercentage: '',
+  interestedCourse: '',
+  studyLocation: '',
+  universityInterest: '',
+  stayInterest: '',
+  extraDetails: ''
+};
+
+export default function CounsellingPage() {
+  const [formData, setFormData] = useState(initialForm);
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setFormData((current) => ({ ...current, [name]: value }));
+    setSubmitted(false);
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    setSubmitted(true);
+  }
+
+  return (
+    <div className="counselling-page">
+      <section className="counselling-main">
+        <div className="container-xl">
+          <div className="counselling-layout">
+            <div className="counselling-info-card">
+              <span className="counselling-card__eyebrow">Easy Guidance</span>
+              <h2>What to fill in this counselling form</h2>
+              <ul className="counselling-checklist">
+                <li>Add your basic student contact details.</li>
+                <li>Tell us which class you completed and your course percentage.</li>
+                <li>Share your course, university, hostel or dayscholar interest.</li>
+                <li>Add extra details so the team can guide you better.</li>
+              </ul>
+
+              <div className="counselling-highlight">
+                <h3>Need better suggestion?</h3>
+                <p>
+                  The more details you add about your interest, location, and study goals, the easier it is for the
+                  counselling team to help you.
+                </p>
+              </div>
+            </div>
+
+            <div className="counselling-form-card">
+              <span className="counselling-card__eyebrow">Student Details Form</span>
+              <h2>Fill your counselling details</h2>
+
+              <form className="counselling-form" onSubmit={handleSubmit}>
+                <div className="counselling-form__grid">
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Student name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="tel"
+                    name="mobile"
+                    placeholder="Mobile number"
+                    value={formData.mobile}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="contactDetails"
+                    placeholder="Contact details"
+                    value={formData.contactDetails}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="studiedClass"
+                    placeholder="Which class studied completed"
+                    value={formData.studiedClass}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="coursePercentage"
+                    placeholder="Course complete percentage"
+                    value={formData.coursePercentage}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="interestedCourse"
+                    placeholder="Which course your interest"
+                    value={formData.interestedCourse}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="studyLocation"
+                    placeholder="Which location you want studied"
+                    value={formData.studyLocation}
+                    onChange={handleChange}
+                    required
+                  />
+                  <input
+                    type="text"
+                    name="universityInterest"
+                    placeholder="Interested university"
+                    value={formData.universityInterest}
+                    onChange={handleChange}
+                    required
+                  />
+                  <select name="stayInterest" value={formData.stayInterest} onChange={handleChange} required>
+                    <option value="">Hostel and dayscholar interest</option>
+                    <option value="Hostel">Hostel</option>
+                    <option value="Dayscholar">Dayscholar</option>
+                    <option value="Both options">Both options</option>
+                  </select>
+                </div>
+
+                <textarea
+                  name="extraDetails"
+                  rows="5"
+                  placeholder="Extra details"
+                  value={formData.extraDetails}
+                  onChange={handleChange}
+                />
+
+                <button type="submit" className="counselling-form__button">
+                  Submit Counselling Form
+                </button>
+              </form>
+
+              {submitted && (
+                <div className="counselling-success">
+                  Your counselling details have been submitted. The class gain team will contact you soon.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

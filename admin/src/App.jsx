@@ -1,0 +1,726 @@
+﻿import { useEffect, useState } from "react";
+import { Alert, Badge, Container, Spinner } from "react-bootstrap";
+import logo from "./assets/navbarlogo_adminpage.png";
+
+const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+const categories = [
+  "Books & Notes",
+  "Writing Things",
+  "Electronics",
+  "Toys",
+  "Story Books",
+  "School Bags",
+];
+const emptyProduct = {
+  name: "",
+  category: "Books & Notes",
+  description: "",
+  price: "",
+  discount: "0",
+  fastDelivery: false,
+  smoothDelivery: false,
+  stock: "0",
+  brand: "",
+  rating: "0",
+  status: true,
+  image: null,
+};
+async function request(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const adminKey = import.meta.env.VITE_ADMIN_API_KEY;
+  if (adminKey) headers.set("X-Admin-Key", adminKey);
+  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const response = await fetch(`${API}${path}`, {
+    cache: "no-store",
+    ...options,
+    headers,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false)
+    throw new Error(data.message || `Backend returned ${response.status}`);
+  return data;
+}
+
+function StudentCounselling({ notify }) {
+  const [items,setItems] = useState([]), [counts,setCounts] = useState({}), [loading,setLoading] = useState(true), [search,setSearch] = useState(""), [status,setStatus] = useState(""), [priority,setPriority] = useState(""), [selected,setSelected] = useState(null), [reply,setReply] = useState(""), [notes,setNotes] = useState("");
+  const load = () => { setLoading(true); const query = new URLSearchParams({ ...(search && {search}), ...(status && {status}), ...(priority && {priority}), limit:"50" }); return request(`/admin/counselling?${query}`).then((d) => { setItems(d.items || []); setCounts(d.counts || {}); }).catch((e) => notify("error",e.message)).finally(() => setLoading(false)); };
+  useEffect(() => { const timer = setTimeout(load,250); return () => clearTimeout(timer); }, [search,status,priority]);
+  const update = async (item, values) => { try { const data = await request(`/admin/counselling/${item._id}`, {method:"PUT",body:JSON.stringify(values)}); notify("success",data.message); setSelected(data.item); load(); } catch(e) { notify("error",e.message); } };
+  const remove = async (item) => { if (!confirm(`Delete counselling request from ${item.name}?`)) return; try { const data = await request(`/admin/counselling/${item._id}`,{method:"DELETE"}); notify("success",data.message); setSelected(null); load(); } catch(e) { notify("error",e.message); } };
+  const open = (item) => { setSelected(item); setReply(item.adminReply || ""); setNotes(item.adminNotes || ""); };
+  return <AdminSection title="Student Counselling" subtitle="Review, reply to, and track every student counselling request."><div className="admin-metrics">{["Total","Pending","In Progress","Resolved","Closed"].map((label) => <article key={label}><span>{label}</span><strong>{label === "Total" ? Object.values(counts).reduce((a,b) => a+b,0) : counts[label] || 0}</strong><p>Counselling requests</p></article>)}</div><div className="admin-toolbar counselling-filters"><input placeholder="Search student, ID, department or category" value={search} onChange={(e)=>setSearch(e.target.value)}/><select value={status} onChange={(e)=>setStatus(e.target.value)}><option value="">All statuses</option>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select><select value={priority} onChange={(e)=>setPriority(e.target.value)}><option value="">All priorities</option>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select></div>{loading ? <Spinner animation="border"/> : <Table headers={["Student","Student ID","Department","Subject","Category","Status","Priority","Date","Actions"]} rows={items.map((item)=>[item.name,item.studentId,item.department,item.subject,item.category,<select value={item.status} onChange={(e)=>update(item,{status:e.target.value})}>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select>,<select value={item.priority} onChange={(e)=>update(item,{priority:e.target.value})}>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select>,date(item.createdAt),<Actions><button onClick={()=>open(item)}>View / Reply</button><button onClick={()=>remove(item)}>Delete</button></Actions>])}/>} {selected && <div className="admin-detail-panel counselling-detail"><div className="admin-detail-panel__header"><div><h2>{selected.subject}</h2><p>{selected.name} · {selected.studentId} · {selected.email} · {selected.phone}</p></div><button onClick={()=>setSelected(null)}>Close</button></div><div className="admin-detail-grid"><article><p><b>Department:</b> {selected.department}</p><p><b>Semester:</b> {selected.semester}</p><p><b>Category:</b> {selected.category}</p><h3>Complete problem</h3><p>{selected.description}</p>{selected.image && <img className="admin-counselling-image" src={`${API.replace(/\/api$/,"")}${selected.image}`} onClick={()=>window.open(`${API.replace(/\/api$/,"")}${selected.image}`,"_blank")}/>}</article><article><label>Admin reply<textarea rows="5" value={reply} onChange={(e)=>setReply(e.target.value)}/></label><label>Private admin notes<textarea rows="4" value={notes} onChange={(e)=>setNotes(e.target.value)}/></label><button onClick={()=>update(selected,{adminReply:reply,adminNotes:notes})}>Save reply and notes</button><button onClick={()=>remove(selected)}>Delete request</button></article></div></div>}</AdminSection>;
+}
+const date = (value) =>
+  value
+    ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(
+        new Date(value),
+      )
+    : "-";
+
+function EducationCenters({ notify }) {
+  const [items, setItems] = useState([]),
+    [loading, setLoading] = useState(true),
+    [search, setSearch] = useState(""),
+    [status, setStatus] = useState("All"),
+    [selected, setSelected] = useState(null);
+  const load = () =>
+    request("/admin/education-centers")
+      .then((d) => setItems(d.items || []))
+      .catch((e) => notify("error", e.message))
+      .finally(() => setLoading(false));
+  useEffect(() => {
+    load();
+  }, []);
+  const action = async (id, type) => {
+    if (type === "delete" && !confirm("Delete this education center?")) return;
+    try {
+      const d = await request(
+        `/admin/education-center/${id}${type === "delete" ? "" : `/${type}`}`,
+        { method: type === "delete" ? "DELETE" : "PATCH" },
+      );
+      notify("success", d.message);
+      load();
+    } catch (e) {
+      notify("error", e.message);
+    }
+  };
+  const visible = items.filter(
+    (x) =>
+      (status === "All" || x.status === status) &&
+      (!search ||
+        [x.educationCenterName, x.email, x.city, x.phone].some((v) =>
+          v?.toLowerCase().includes(search.toLowerCase()),
+        )),
+  );
+  const count = (value) => items.filter((x) => x.status === value).length;
+  return (
+    <>
+      <section className="admin-hero">
+        <Container fluid="xl">
+          <div className="admin-hero__content">
+            <Badge bg="success" className="admin-badge">
+              Approval System
+            </Badge>
+            <h1>Review education center registrations.</h1>
+            <p>
+              Approve, reject, view, and remove education centers before they
+              can sign in or appear on the client portal.
+            </p>
+          </div>
+        </Container>
+      </section>
+      <AdminSection
+        title="Education Centers"
+        subtitle="Manage all education-center approval requests."
+      >
+        {loading ? (
+          <Spinner animation="border" />
+        ) : (
+          <>
+            <div className="admin-metrics">
+              <article>
+                <span>Total Centers</span>
+                <strong>{items.length}</strong>
+                <p>All registration requests</p>
+              </article>
+              <article>
+                <span>Pending</span>
+                <strong>{count("Pending")}</strong>
+                <p>Waiting for admin review</p>
+              </article>
+              <article>
+                <span>Approved</span>
+                <strong>{count("Approved")}</strong>
+                <p>Visible to clients</p>
+              </article>
+            </div>
+            <div className="admin-toolbar">
+              <div>
+                <span>Education Centers</span>
+                <strong>{visible.length}</strong>
+              </div>
+              <label>
+                <span>Search</span>
+                <input
+                  placeholder="Name, phone, email, city"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </label>
+              <label>
+                <span>Status</span>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  {["All", "Pending", "Approved", "Rejected"].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <Table
+              headers={[
+                "Education Center Name",
+                "Category",
+                "Phone",
+                "Email",
+                "Status",
+                "Created Date",
+                "Actions",
+              ]}
+              rows={visible.map((x) => [
+                x.educationCenterName,
+                x.category,
+                x.phone,
+                x.email,
+                <Badge
+                  bg={
+                    x.status === "Approved"
+                      ? "success"
+                      : x.status === "Rejected"
+                        ? "danger"
+                        : "warning"
+                  }
+                >
+                  {x.status}
+                </Badge>,
+                date(x.createdAt),
+                <Actions>
+                  <button onClick={() => setSelected(x)}>View</button>
+                  <button onClick={() => action(x.id, "approve")}>
+                    Approve
+                  </button>
+                  <button onClick={() => action(x.id, "reject")}>Reject</button>
+                  <button
+                    className="danger"
+                    onClick={() => action(x.id, "delete")}
+                  >
+                    Delete
+                  </button>
+                </Actions>,
+              ])}
+            />
+            {selected && (
+              <section className="admin-detail-panel">
+                <div className="admin-detail-panel__header">
+                  <div>
+                    <span>Selected Center</span>
+                    <h2>{selected.educationCenterName}</h2>
+                  </div>
+                  <Badge
+                    bg={selected.status === "Approved" ? "success" : "warning"}
+                  >
+                    {selected.status}
+                  </Badge>
+                </div>
+                <div className="admin-detail-grid">
+                  <div>
+                    <span>Owner</span>
+                    <strong>{selected.ownerName}</strong>
+                  </div>
+                  <div>
+                    <span>Category</span>
+                    <strong>{selected.category}</strong>
+                  </div>
+                  <div>
+                    <span>Phone</span>
+                    <strong>{selected.phone}</strong>
+                  </div>
+                  <div>
+                    <span>Email</span>
+                    <strong>{selected.email}</strong>
+                  </div>
+                  <div>
+                    <span>Address</span>
+                    <strong>
+                      {[
+                        selected.address,
+                        selected.city,
+                        selected.state,
+                        selected.pincode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Username</span>
+                    <strong>{selected.username}</strong>
+                  </div>
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </AdminSection>
+    </>
+  );
+}
+
+function SupportTickets({ notify }) {
+  const [type, setType] = useState("student"),
+    [items, setItems] = useState([]),
+    [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    return request(`/support-tickets/admin/${type}`)
+      .then((d) => setItems(d.items || []))
+      .catch((e) => notify("error", e.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => {
+    load();
+  }, [type]);
+  const update = async (ticket, patch) => {
+    try {
+      await request(`/support-tickets/admin/${type}/${ticket._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      notify("success", "Ticket updated.");
+      load();
+    } catch (e) {
+      notify("error", e.message);
+    }
+  };
+  const remove = async (ticket) => {
+    if (!confirm("Delete this support ticket?")) return;
+    try {
+      await request(`/support-tickets/admin/${type}/${ticket._id}`, {
+        method: "DELETE",
+      });
+      notify("success", "Ticket deleted.");
+      load();
+    } catch (e) {
+      notify("error", e.message);
+    }
+  };
+  const reply = (ticket) => {
+    const value = prompt("Enter reply", ticket.reply || "");
+    if (value !== null) update(ticket, { reply: value, status: "In Progress" });
+  };
+  return (
+    <AdminSection
+      title="Support Tickets"
+      subtitle="Student and education center requests in one workspace."
+    >
+      <div className="admin-tabs">
+        <button
+          className={type === "student" ? "active" : ""}
+          onClick={() => setType("student")}
+        >
+          Student Support
+        </button>
+        <button
+          className={type === "education-center" ? "active" : ""}
+          onClick={() => setType("education-center")}
+        >
+          Education Center Support
+        </button>
+      </div>
+      {loading ? (
+        <Spinner animation="border" />
+      ) : (
+        <Table
+          headers={
+            type === "student"
+              ? [
+                  "Ticket ID",
+                  "Student",
+                  "Email",
+                  "Subject",
+                  "Message",
+                  "Status",
+                  "Created",
+                  "Actions",
+                ]
+              : [
+                  "Ticket ID",
+                  "Center",
+                  "Owner",
+                  "Email",
+                  "Subject",
+                  "Message",
+                  "Status",
+                  "Created",
+                  "Actions",
+                ]
+          }
+          rows={items.map((t) => {
+            const common = [
+              t.ticketId || t.ticket_id,
+              type === "student" ? t.studentName : t.education_center_name,
+              ...(type === "student" ? [] : [t.owner_name || "-"]),
+              t.email,
+              t.subject,
+              t.message || t.full_details || t.how_can_we_help,
+              <select
+                value={t.status}
+                onChange={(e) => update(t, { status: e.target.value })}
+              >
+                <option>Open</option>
+                <option>In Progress</option>
+                <option>Closed</option>
+              </select>,
+              date(t.createdAt || t.created_at),
+              <Actions>
+                <button onClick={() => reply(t)}>Reply</button>
+                <button onClick={() => update(t, { status: "Closed" })}>
+                  Close
+                </button>
+                <button className="danger" onClick={() => remove(t)}>
+                  Delete
+                </button>
+              </Actions>,
+            ];
+            return common;
+          })}
+        />
+      )}
+    </AdminSection>
+  );
+}
+
+function Products({ notify }) {
+  const [items, setItems] = useState([]),
+    [form, setForm] = useState(emptyProduct),
+    [editing, setEditing] = useState(""),
+    [search, setSearch] = useState(""),
+    [category, setCategory] = useState(""),
+    [page, setPage] = useState(1),
+    [pages, setPages] = useState(1),
+    [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    return request(
+      `/products?status=all&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&page=${page}&limit=8`,
+    )
+      .then((d) => {
+        setItems(d.items || []);
+        setPages(d.pagination?.pages || 1);
+      })
+      .catch((e) => notify("error", e.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => {
+    load();
+  }, [search, category, page]);
+  const change = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]:
+        type === "checkbox" ? checked : type === "file" ? files[0] : value,
+    }));
+  };
+  const submit = async (e) => {
+    e.preventDefault();
+    const data = new FormData();
+    Object.entries(form).forEach(([k, v]) => v !== null && data.append(k, v));
+    try {
+      const d = await request(
+        `/admin/products${editing ? `/${editing}` : ""}`,
+        { method: editing ? "PUT" : "POST", body: data },
+      );
+      notify("success", d.message);
+      setForm(emptyProduct);
+      setEditing("");
+      load();
+    } catch (err) {
+      notify("error", err.message);
+    }
+  };
+  const edit = (p) => {
+    setEditing(p._id);
+    setForm({
+      ...p,
+      image: null,
+      price: String(p.price),
+      discount: String(p.discount),
+      stock: String(p.stock),
+      rating: String(p.rating),
+    });
+    scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const remove = async (p) => {
+    if (!confirm(`Delete ${p.name}?`)) return;
+    try {
+      const d = await request(`/admin/products/${p._id}`, { method: "DELETE" });
+      notify("success", d.message);
+      load();
+    } catch (e) {
+      notify("error", e.message);
+    }
+  };
+  const final =
+    (Number(form.price) || 0) * (1 - (Number(form.discount) || 0) / 100);
+  return (
+    <AdminSection
+      title="Ecommerce Products"
+      subtitle="Add, edit, search, filter, and publish storefront inventory."
+    >
+      <form className="product-form" onSubmit={submit}>
+        <input
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={change}
+          required={!editing}
+        />
+        <input
+          name="name"
+          placeholder="Product name"
+          value={form.name}
+          onChange={change}
+          required
+        />
+        <select name="category" value={form.category} onChange={change}>
+          {categories.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+        <textarea
+          name="description"
+          placeholder="Description"
+          value={form.description}
+          onChange={change}
+          required
+        />
+        <input
+          name="price"
+          type="number"
+          min="0"
+          step=".01"
+          placeholder="Original price"
+          value={form.price}
+          onChange={change}
+          required
+        />
+        <input
+          name="discount"
+          type="number"
+          min="0"
+          max="100"
+          placeholder="Discount %"
+          value={form.discount}
+          onChange={change}
+        />
+        <input value={final.toFixed(2)} readOnly aria-label="Final price" />
+        <input
+          name="stock"
+          type="number"
+          min="0"
+          placeholder="Stock"
+          value={form.stock}
+          onChange={change}
+        />
+        <input
+          name="brand"
+          placeholder="Brand"
+          value={form.brand}
+          onChange={change}
+        />
+        <input
+          name="rating"
+          type="number"
+          min="0"
+          max="5"
+          step=".1"
+          placeholder="Rating"
+          value={form.rating}
+          onChange={change}
+        />
+        <label>
+          <input
+            name="fastDelivery"
+            type="checkbox"
+            checked={form.fastDelivery}
+            onChange={change}
+          />{" "}
+          Fast Delivery
+        </label>
+        <label>
+          <input
+            name="smoothDelivery"
+            type="checkbox"
+            checked={form.smoothDelivery}
+            onChange={change}
+          />{" "}
+          Smooth Delivery
+        </label>
+        <label>
+          <input
+            name="status"
+            type="checkbox"
+            checked={form.status}
+            onChange={change}
+          />{" "}
+          Active
+        </label>
+        <button type="submit">
+          {editing ? "Update Product" : "Add Product"}
+        </button>
+        {editing && (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing("");
+              setForm(emptyProduct);
+            }}
+          >
+            Cancel
+          </button>
+        )}
+      </form>
+      <div className="admin-toolbar">
+        <input
+          placeholder="Search products"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+        <select
+          value={category}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => (
+            <option key={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+      {loading ? (
+        <Spinner animation="border" />
+      ) : (
+        <Table
+          headers={[
+            "Product",
+            "Category",
+            "Price",
+            "Stock",
+            "Status",
+            "Created",
+            "Actions",
+          ]}
+          rows={items.map((p) => [
+            p.name,
+            p.category,
+            `Rs. ${p.finalPrice}`,
+            p.stock,
+            p.status ? "Active" : "Inactive",
+            date(p.createdAt),
+            <Actions>
+              <button onClick={() => edit(p)}>Edit</button>
+              <button className="danger" onClick={() => remove(p)}>
+                Delete
+              </button>
+            </Actions>,
+          ])}
+        />
+      )}
+      <div className="pagination">
+        <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          Previous
+        </button>
+        <span>
+          Page {page} of {pages}
+        </span>
+        <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+          Next
+        </button>
+      </div>
+    </AdminSection>
+  );
+}
+
+function AdminSection({ title, subtitle, children }) {
+  return (
+    <section className="admin-dashboard">
+      <Container fluid="xl">
+        <div className="admin-section-heading">
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+        {children}
+      </Container>
+    </section>
+  );
+}
+function Table({ headers, rows }) {
+  return (
+    <div className="admin-table-wrap">
+      <table className="admin-table">
+        <thead>
+          <tr>
+            {headers.map((h) => (
+              <th key={h}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i}>
+              {row.map((cell, j) => (
+                <td key={j}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!rows.length && (
+        <div className="admin-empty-state">No records found.</div>
+      )}
+    </div>
+  );
+}
+function Actions({ children }) {
+  return <div className="admin-row-actions">{children}</div>;
+}
+export default function App() {
+  const [page, setPage] = useState("centers"),
+    [notice, setNotice] = useState(null);
+  const notify = (type, message) => {
+    setNotice({ type, message });
+    setTimeout(() => setNotice(null), 3500);
+  };
+  return (
+    <div className="admin-page">
+      <header className="admin-header">
+        <Container fluid="xl" className="admin-header__inner">
+          <img src={logo} className="admin-brand__logo" />
+          <nav className="admin-nav">
+            <button onClick={() => setPage("centers")}>
+              Education Centers
+            </button>
+            <button onClick={() => setPage("support")}>Support Tickets</button>
+            <button onClick={() => setPage("products")}>
+              Ecommerce Products
+            </button>
+            <button onClick={() => setPage("counselling")}>Student Counselling</button>
+          </nav>
+        </Container>
+      </header>
+      {notice && (
+        <Container fluid="xl">
+          <Alert
+            className="mt-3"
+            variant={notice.type === "error" ? "danger" : "success"}
+          >
+            {notice.message}
+          </Alert>
+        </Container>
+      )}
+      {page === "centers" && <EducationCenters notify={notify} />}{" "}
+      {page === "support" && <SupportTickets notify={notify} />}{" "}
+      {page === "products" && <Products notify={notify} />}
+      {page === "counselling" && <StudentCounselling notify={notify} />}
+    </div>
+  );
+}

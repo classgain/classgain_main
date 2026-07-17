@@ -1,0 +1,23 @@
+{
+  "name": "classgain-project",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix client && npm install --prefix seller && npm install --prefix admin && npm install --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:clients": "npm run dev --prefix client",
+    "dev:seller": "npm run dev --prefix seller",
+    "dev:admin": "npm run dev --prefix admin",
+    "dev:server": "npm run dev --prefix server",
+    "db:setup": "npm run db:setup --prefix server",
+    "build": "npm run build --prefix client",
+    "build:clients": "npm run build --prefix client",
+    "build:seller": "npm run build --prefix seller",
+    "build:admin": "npm run build --prefix admin",
+    "build:all": "npm run build:clients && npm run build:seller && npm run build:admin",
+    "start:server": "npm start --prefix server"
+  },
+  "dependencies": {
+    "mongodb": "^7.5.0"
+  }
+}

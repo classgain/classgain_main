@@ -1,0 +1,22 @@
+.vercel/
+**/.vercel/
+node_modules/
+**/node_modules/
+.npm-cache/
+.npm-cache-*/
+dist/
+**/dist/
+build/
+**/build/
+
+# Never commit runtime secrets. The explicitly unignored files contain placeholders only.
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+!**/.env.development
+!**/.env.production
+
+*.log
