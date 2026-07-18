@@ -5,7 +5,7 @@ This repository is prepared for three Vercel projects, one Render web service, a
 ## Production folder structure
 
 ```text
-classgain-project/
+what-next-project/
 |-- client/
 |   |-- .env.production
 |   |-- vercel.json
@@ -61,6 +61,7 @@ Required Render environment variables:
 
 ```dotenv
 MONGO_URI=mongodb+srv://...
+FRONTEND_URLS=https://your-client.vercel.app,https://your-seller.vercel.app,https://your-admin.vercel.app
 CLIENT_URL=https://your-client.vercel.app
 SELLER_URL=https://your-seller.vercel.app
 ADMIN_URL=https://your-admin.vercel.app
@@ -68,6 +69,11 @@ JWT_SECRET=<at-least-32-random-characters>
 ADMIN_API_KEY=<separate-strong-random-key>
 NODE_ENV=production
 ```
+
+`FRONTEND_URLS` may contain only the frontend deployments that currently exist. The
+individual `CLIENT_URL`, `SELLER_URL`, and `ADMIN_URL` variables are optional aliases,
+so an API deployment no longer fails merely because the seller or admin frontend has
+not been deployed yet. Configure at least one origin by either method.
 
 Render supplies `PORT`; the server falls back to `5000` outside Render. `CLIENT_URL`, `SELLER_URL`, and `ADMIN_URL` must be HTTPS origins without a trailing path. A variable may contain comma-separated origins if a custom domain must also be allowed.
 
@@ -77,7 +83,11 @@ After deployment, verify:
 https://your-render-service.onrender.com/api/health
 ```
 
-A healthy response has HTTP 200 and reports `database: "connected"`.
+The liveness endpoint returns HTTP 200 when Express is online and reports the database
+state. Use `/api/ready` to verify the complete API: it returns HTTP 200 only when
+MongoDB is connected, or HTTP 503 with `database: "disconnected"`. The server retries
+MongoDB automatically, so a temporary Atlas or DNS outage no longer leaves Render
+unreachable.
 
 ## 3. Deploy the three frontends to Vercel
 

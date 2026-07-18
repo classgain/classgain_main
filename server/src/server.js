@@ -31,6 +31,7 @@ const port = Number(process.env.PORT) || 5000;
 const mongoUri = process.env.MONGO_URI;
 const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '10mb';
 const uploadDirectory = path.resolve(process.env.UPLOAD_DIR || 'uploads');
+const mongoRetryDelayMs = Number(process.env.MONGO_RETRY_DELAY_MS) || 10_000;
 
 async function configureMongoDns() {
   if (!mongoUri?.startsWith('mongodb+srv://')) {
@@ -73,7 +74,12 @@ function splitOrigins(value = '') {
 
 function createAllowedOrigins() {
   return new Set(
-    [process.env.CLIENT_URL, process.env.SELLER_URL, process.env.ADMIN_URL]
+    [
+      process.env.FRONTEND_URLS,
+      process.env.CLIENT_URL,
+      process.env.SELLER_URL,
+      process.env.ADMIN_URL
+    ]
       .filter(Boolean)
       .flatMap(splitOrigins)
   );
@@ -81,10 +87,6 @@ function createAllowedOrigins() {
 
 function validateEnvironment() {
   const requiredVariables = ['MONGO_URI', 'JWT_SECRET'];
-
-  if (isProduction) {
-    requiredVariables.push('CLIENT_URL', 'SELLER_URL', 'ADMIN_URL');
-  }
 
   const missingVariables = requiredVariables.filter((name) => !process.env[name]?.trim());
 
@@ -100,7 +102,13 @@ function validateEnvironment() {
     throw new Error('JWT_SECRET must contain at least 32 characters in production.');
   }
 
-  for (const name of ['CLIENT_URL', 'SELLER_URL', 'ADMIN_URL']) {
+  if (isProduction && allowedOrigins.size === 0) {
+    throw new Error(
+      'Configure at least one frontend origin with FRONTEND_URLS, CLIENT_URL, SELLER_URL, or ADMIN_URL.'
+    );
+  }
+
+  for (const name of ['FRONTEND_URLS', 'CLIENT_URL', 'SELLER_URL', 'ADMIN_URL']) {
     for (const origin of splitOrigins(process.env[name])) {
       const parsedOrigin = new URL(origin);
 
@@ -221,11 +229,32 @@ app.use('/uploads', (_req, res) => {
 app.get('/api/health', (_req, res) => {
   const databaseConnected = mongoose.connection.readyState === 1;
 
-  res.status(databaseConnected ? 200 : 503).json({
-    ok: databaseConnected,
+  res.status(200).json({
+    ok: true,
     service: 'what-next-server',
     database: databaseConnected ? 'connected' : 'disconnected',
     uptimeSeconds: Math.floor(process.uptime())
+  });
+});
+
+app.get('/api/ready', (_req, res) => {
+  const databaseConnected = mongoose.connection.readyState === 1;
+
+  res.status(databaseConnected ? 200 : 503).json({
+    ready: databaseConnected,
+    service: 'what-next-server',
+    database: databaseConnected ? 'connected' : 'disconnected'
+  });
+});
+
+app.use('/api', (_req, res, next) => {
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
+  return res.status(503).json({
+    success: false,
+    message: 'The backend is online, but MongoDB is not connected yet. Check the Render MONGO_URI and MongoDB Atlas network access.'
   });
 });
 
@@ -290,12 +319,15 @@ app.use((error, _req, res, _next) => {
 
 let server;
 let isShuttingDown = false;
+let mongoRetryTimer;
 
-async function startServer() {
+async function connectDatabase() {
+  if (isShuttingDown || mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+    return;
+  }
+
   try {
-    validateEnvironment();
     await configureMongoDns();
-
     await mongoose.connect(mongoUri, {
       maxPoolSize: 10,
       minPoolSize: 0,
@@ -312,6 +344,28 @@ async function startServer() {
         createdCollections
       })
     );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        event: 'database_connection_failed',
+        message: error.message,
+        retryDelayMs: mongoRetryDelayMs
+      })
+    );
+
+    await mongoose.disconnect().catch(() => undefined);
+
+    if (!isShuttingDown) {
+      mongoRetryTimer = setTimeout(() => void connectDatabase(), mongoRetryDelayMs);
+      mongoRetryTimer.unref();
+    }
+  }
+}
+
+async function startServer() {
+  try {
+    validateEnvironment();
 
     server = app.listen(port, '0.0.0.0', () => {
       console.log(
@@ -326,6 +380,7 @@ async function startServer() {
 
     server.keepAliveTimeout = 65_000;
     server.headersTimeout = 66_000;
+    void connectDatabase();
   } catch (error) {
     console.error(
       JSON.stringify({
@@ -344,6 +399,7 @@ async function shutdown(signal) {
   }
 
   isShuttingDown = true;
+  clearTimeout(mongoRetryTimer);
   console.log(JSON.stringify({ level: 'info', event: 'shutdown_started', signal }));
 
   const forcedShutdown = setTimeout(() => {

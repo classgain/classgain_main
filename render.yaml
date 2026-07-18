@@ -15,6 +15,10 @@ services:
         value: production
       - key: MONGO_URI
         sync: false
+      # Comma-separated list of every deployed frontend origin. This is the
+      # simplest option when only one or two of the frontends are deployed.
+      - key: FRONTEND_URLS
+        sync: false
       - key: CLIENT_URL
         sync: false
       - key: SELLER_URL
@@ -33,3 +37,5 @@ services:
         value: 300
       - key: AUTH_RATE_LIMIT_MAX
         value: 20
+      - key: MONGO_RETRY_DELAY_MS
+        value: 10000
