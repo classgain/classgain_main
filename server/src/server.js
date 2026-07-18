@@ -226,6 +226,22 @@ app.use('/uploads', (_req, res) => {
   res.status(404).json({ success: false, message: 'Upload not found.' });
 });
 
+app.get('/', (_req, res) => {
+  const databaseConnected = mongoose.connection.readyState === 1;
+
+  res.status(200).json({
+    ok: true,
+    service: 'what-next-server',
+    message: 'What Next API is running.',
+    database: databaseConnected ? 'connected' : 'disconnected',
+    endpoints: {
+      health: '/api/health',
+      readiness: '/api/ready',
+      education: '/api/education'
+    }
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   const databaseConnected = mongoose.connection.readyState === 1;
 
