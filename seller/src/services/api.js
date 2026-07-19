@@ -1,4 +1,7 @@
-const configuredApiUrl = import.meta.env?.VITE_API_URL;
+// Production requests stay on the seller origin and are forwarded by
+// vercel.json. This prevents a deployment-level VITE_API_URL override from
+// bypassing the proxy and triggering browser CORS failures against Render.
+const configuredApiUrl = import.meta.env.DEV ? import.meta.env.VITE_API_URL : '/api';
 export const API = (configuredApiUrl || '/api').replace(/\/$/, '');
 
 function isJsonResponse(response) {

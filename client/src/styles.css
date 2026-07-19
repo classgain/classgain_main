@@ -16,6 +16,8 @@
   box-sizing: border-box;
 }
 
+.route-loading{min-height:45vh;display:grid;place-items:center;color:#123a63;font-weight:800}
+
 body {
   margin: 0;
   background:

@@ -117,6 +117,7 @@ educationCenterSchema.index({
   city: 'text',
   state: 'text'
 });
+educationCenterSchema.index({ status: 1, category: 1, created_at: -1 });
 
 const EducationCenter =
   mongoose.models.EducationCenter || mongoose.model('EducationCenter', educationCenterSchema);

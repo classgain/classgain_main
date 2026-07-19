@@ -1,18 +1,17 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import AppShellMainOnly from './components/AppShellMainOnly';
-// first navbar 
-import CounsellingPage from './pages/CounsellingPage';
-import EducationCenterLoginPage from './pages/EducationCenterLoginPage';
-import HelpCenterPage from './pages/HelpCenterPage';
-import LoginPage from './pages/LoginPage';
-import VideoEducationPage from './pages/VideoEducationPage';
 
-//secondarynavbar
-import EducationDetailsPage from './pages/EducationDetailsPage';
-import HomePage from './pages/HomePage';
-import EducationCategoryPage from './pages/EducationCategoryPage';
-import EcommerceHomePage from './pages/EcommerceHomePage';
-import EcommerceOrderPage from './pages/EcommerceOrderPage';
+const CounsellingPage = lazy(() => import('./pages/CounsellingPage'));
+const EducationCenterLoginPage = lazy(() => import('./pages/EducationCenterLoginPage'));
+const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const VideoEducationPage = lazy(() => import('./pages/VideoEducationPage'));
+const EducationDetailsPage = lazy(() => import('./pages/EducationDetailsPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const EducationCategoryPage = lazy(() => import('./pages/EducationCategoryPage'));
+const EcommerceHomePage = lazy(() => import('./pages/EcommerceHomePage'));
+const EcommerceOrderPage = lazy(() => import('./pages/EcommerceOrderPage'));
 
 const categoryConfig = {
   primary: {
@@ -62,7 +61,7 @@ const categoryConfig = {
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<div className="route-loading" role="status">Loading page...</div>}><Routes>
       <Route path="/" element={<AppShellMainOnly />}>
         <Route index element={<HomePage categories={categoryConfig} />} />
         <Route path="home" element={<HomePage categories={categoryConfig} />} />
@@ -99,6 +98,6 @@ export default function App() {
         <Route path="ecommerce" element={<EcommerceHomePage />} />
         <Route path="ecommerce-orders" element={<EcommerceOrderPage />} />
       </Route>
-    </Routes>
+    </Routes></Suspense>
   );
 }

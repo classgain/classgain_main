@@ -1,5 +1,25 @@
-const configuredApiUrl = import.meta.env?.VITE_API_URL;
+// In production, keep browser requests on the client origin and let
+// vercel.json forward /api to Render. This prevents a Vercel environment
+// override from sending login requests cross-origin and triggering CORS.
+const configuredApiUrl = import.meta.env.DEV ? import.meta.env.VITE_API_URL : '/api';
 export const API = (configuredApiUrl || '/api').replace(/\/$/, '');
+const publicRequestCache = new Map();
+const PUBLIC_CACHE_TTL_MS = 60_000;
+
+async function fetchPublicJson(url) {
+  const cached = publicRequestCache.get(url);
+  if (cached && Date.now() - cached.createdAt < PUBLIC_CACHE_TTL_MS) return cached.promise;
+  const promise = fetch(url, { cache: 'default' }).then(async (response) => {
+    if (!response.ok) throw new Error('Unable to load data from MongoDB right now.');
+    if (!isJsonResponse(response)) throw new Error('The backend API is not connected yet.');
+    return response.json();
+  }).catch((error) => {
+    publicRequestCache.delete(url);
+    throw error;
+  });
+  publicRequestCache.set(url, { createdAt: Date.now(), promise });
+  return promise;
+}
 
 function isJsonResponse(response) {
   return (response.headers.get('content-type') || '').includes('application/json');
@@ -37,37 +57,11 @@ function buildQueryString(params = {}) {
 }
 
 export async function fetchEducationItems(category, options = {}) {
-  const response = await fetch(`${API}/education/${encodeURIComponent(category)}`, {
-    cache: 'no-store',
-    ...options
-  });
-
-  if (!response.ok) {
-    throw new Error('Unable to load education data from MongoDB right now.');
-  }
-
-  if (!isJsonResponse(response)) {
-    throw new Error('Education API is not connected yet. Check the Render backend.');
-  }
-
-  return response.json();
+  return fetchPublicJson(`${API}/education/${encodeURIComponent(category)}`);
 }
 
 export async function fetchAllEducationItems(options = {}) {
-  const response = await fetch(`${API}/education`, {
-    cache: 'no-store',
-    ...options
-  });
-
-  if (!response.ok) {
-    throw new Error('Unable to load all education centers from MongoDB right now.');
-  }
-
-  if (!isJsonResponse(response)) {
-    throw new Error('Education API is not connected yet. Check the Render backend.');
-  }
-
-  return response.json();
+  return fetchPublicJson(`${API}/education`);
 }
 
 export async function fetchEducationItemDetails(itemId, options = {}) {

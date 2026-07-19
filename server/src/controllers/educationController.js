@@ -271,10 +271,12 @@ export async function getEducationByCategory(req, res, next) {
       return res.json({ category, items: mergePublicItems(items, []) });
     }
 
-    const approvedCenters = await EducationCenter.find({ status: 'Approved' }).sort({ created_at: -1 }).lean();
+    const databaseCategories = { primary: 'School', secondary: 'College', extra: 'Coaching Center' };
+    const approvedCenters = await EducationCenter.find({ status: 'Approved', category: databaseCategories[category] })
+      .sort({ created_at: -1 })
+      .lean();
     const items = approvedCenters
       .map((center) => buildApprovedEducationCenterPublicItem(center))
-      .filter((item) => item.category === category);
 
     return res.json({ category, items });
   } catch (error) {

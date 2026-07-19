@@ -8,6 +8,7 @@
     "dev:clients": "npm run dev --prefix client",
     "dev:seller": "npm run dev --prefix seller",
     "dev:admin": "npm run dev --prefix admin",
+    "dev:admin:full": "node scripts/dev-admin.js",
     "dev:server": "npm run dev --prefix server",
     "db:setup": "npm run db:setup --prefix server",
     "build": "npm run build --prefix client",

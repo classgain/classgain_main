@@ -219,11 +219,21 @@ app.use(
     dotfiles: 'deny',
     etag: true,
     fallthrough: true,
-    maxAge: isProduction ? '1d' : 0
+    maxAge: isProduction ? '1y' : 0,
+    immutable: isProduction
   })
 );
 app.use('/uploads', (_req, res) => {
   res.status(404).json({ success: false, message: 'Upload not found.' });
+});
+
+app.use(['/api/education', '/api/products'], (req, res, next) => {
+  if (req.method === 'GET') {
+    res.set('Cache-Control', isProduction
+      ? 'public, max-age=60, s-maxage=300, stale-while-revalidate=600'
+      : 'no-cache');
+  }
+  next();
 });
 
 app.get('/', (_req, res) => {

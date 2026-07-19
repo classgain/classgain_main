@@ -13,3 +13,50 @@ export async function createOrder(req,res,next) { try {
 } catch(error){ return next(error); } }
 export async function listMyOrders(req,res,next) { try { const items=await Order.find({studentObjectId:req.student._id}).sort({createdAt:-1}); return res.json({success:true,items}); } catch(error){return next(error);} }
 export async function getMyOrder(req,res,next) { try { const item=await Order.findOne({_id:req.params.id,studentObjectId:req.student._id}); if(!item)return res.status(404).json({success:false,message:'Order not found.'}); return res.json({success:true,item}); } catch(error){return next(error);} }
+
+const orderStatuses = ['Order Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
+const paymentStatuses = ['Pending', 'Completed'];
+
+export async function listAdminOrders(req, res, next) {
+  try {
+    const query = {};
+    const search = String(req.query.search || '').trim();
+    const status = String(req.query.status || '').trim();
+    if (status && orderStatuses.includes(status)) query.orderStatus = status;
+    if (search) {
+      const expression = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [
+        { orderNumber: expression },
+        { productName: expression },
+        { 'customer.name': expression },
+        { 'customer.email': expression },
+        { 'customer.phone': expression },
+        { address: expression }
+      ];
+    }
+    const items = await Order.find(query).sort({ createdAt: -1 }).lean();
+    return res.json({ success: true, items });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function updateAdminOrder(req, res, next) {
+  try {
+    const updates = {};
+    if (req.body.orderStatus !== undefined) {
+      if (!orderStatuses.includes(req.body.orderStatus)) return res.status(400).json({ success: false, message: 'Invalid tracking status.' });
+      updates.orderStatus = req.body.orderStatus;
+    }
+    if (req.body.paymentStatus !== undefined) {
+      if (!paymentStatuses.includes(req.body.paymentStatus)) return res.status(400).json({ success: false, message: 'Invalid payment status.' });
+      updates.paymentStatus = req.body.paymentStatus;
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ success: false, message: 'Choose a status to update.' });
+    const item = await Order.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+    if (!item) return res.status(404).json({ success: false, message: 'Order not found.' });
+    return res.json({ success: true, message: 'Order status updated.', item });
+  } catch (error) {
+    return next(error);
+  }
+}

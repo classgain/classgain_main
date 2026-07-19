@@ -1,36 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
 import { Container, Nav, Navbar } from 'react-bootstrap';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import logo from '../assets/navbarlogo_educationteam.png';
 
 const topLinks = [
   { label: 'Education Center Help', to: '/education-center/help' },
-  { label: 'Education Center Login', to: '/education-center/login' },
-  { label: 'Upload Profile', to: '/education-center-upload' },
-  { label: 'Creator Channel', to: '/video-uploader-channel' }
+  { label: 'Education Center Login', to: '/education-center/login' }
 ];
 
 export default function AppShellMainOnly() {
-  const location = useLocation();
-  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
-  const lastScrollYRef = useRef(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScroll = window.scrollY;
-      setIsHeaderScrolled(currentScroll > 8);
-      lastScrollYRef.current = currentScroll;
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    lastScrollYRef.current = window.scrollY;
-    setIsHeaderScrolled(window.scrollY > 8);
-  }, [location.pathname]);
-
   return (
     <div className="app-shell">
       <Navbar expand="lg" className="top-navbar py-3">
@@ -50,20 +27,6 @@ export default function AppShellMainOnly() {
           </Navbar.Collapse>
         </Container>
       </Navbar>
-
-      <header className={`site-header sticky-top ${isHeaderScrolled ? 'site-header--scrolled' : ''}`}>
-        <Navbar expand="lg" className="section-navbar py-2">
-          <Container fluid="xl">
-            <Nav className="section-nav w-100 justify-content-between gap-2 flex-wrap">
-              {topLinks.map((link) => (
-                <Nav.Link as={NavLink} key={link.label} to={link.to} className="section-nav-link flex-fill text-center">
-                  {link.label}
-                </Nav.Link>
-              ))}
-            </Nav>
-          </Container>
-        </Navbar>
-      </header>
 
       <main>
         <Outlet />

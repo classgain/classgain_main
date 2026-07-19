@@ -25,7 +25,9 @@ const emptyProduct = {
   status: true,
   image: null,
 };
-async function request(path, options = {}) {
+const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
+
+async function request(path, options = {}, attempt = 0) {
   const headers = new Headers(options.headers || {});
   const adminKey = import.meta.env.VITE_ADMIN_API_KEY;
   if (adminKey) headers.set("X-Admin-Key", adminKey);
@@ -35,9 +37,26 @@ async function request(path, options = {}) {
     ...options,
     headers,
   });
+
+  if (
+    RETRYABLE_BACKEND_STATUSES.has(response.status) &&
+    attempt < 2 &&
+    (!options.method || options.method === "GET")
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+    return request(path, options, attempt + 1);
+  }
+
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false)
-    throw new Error(data.message || `Backend returned ${response.status}`);
+  if (!response.ok || data.success === false) {
+    const unavailable = RETRYABLE_BACKEND_STATUSES.has(response.status);
+    throw new Error(
+      data.message ||
+        (unavailable
+          ? "The backend is temporarily unavailable. Check the Render service and its environment variables, then try again."
+          : `Backend returned ${response.status}`),
+    );
+  }
   return data;
 }
 
@@ -640,6 +659,68 @@ function Products({ notify }) {
   );
 }
 
+const trackingStatuses = ["Order Confirmed", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
+
+function BuyingDetails({ notify }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+
+  const load = () => {
+    setLoading(true);
+    const query = new URLSearchParams({ ...(search && { search }), ...(status && { status }) });
+    return request(`/admin/orders?${query}`)
+      .then((data) => setItems(data.items || []))
+      .catch((error) => notify("error", error.message))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(load, 250);
+    return () => clearTimeout(timer);
+  }, [search, status]);
+
+  const update = async (order, values) => {
+    try {
+      const data = await request(`/admin/orders/${order._id}`, {
+        method: "PATCH",
+        body: JSON.stringify(values),
+      });
+      notify("success", data.message);
+      setItems((current) => current.map((item) => item._id === order._id ? data.item : item));
+    } catch (error) {
+      notify("error", error.message);
+    }
+  };
+
+  return (
+    <AdminSection title="Buying Details" subtitle="View student purchases, shipping and contact details, payment information, and delivery tracking.">
+      <div className="admin-toolbar">
+        <input placeholder="Search order, student, item, phone or address" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="">All tracking statuses</option>
+          {trackingStatuses.map((value) => <option key={value}>{value}</option>)}
+        </select>
+        <strong>{items.length} orders</strong>
+      </div>
+      {loading ? <Spinner animation="border" /> : (
+        <Table
+          headers={["Order / Date", "Purchased Item", "Student Contact", "Shipping Address", "Payment", "Tracking Status"]}
+          rows={items.map((order) => [
+            <div><strong>{order.orderNumber}</strong><br /><small>{date(order.createdAt)}</small></div>,
+            <div><strong>{order.productName}</strong><br /><span>{order.quantity} × Rs. {order.unitPrice}</span><br /><b>Total: Rs. {order.totalAmount}</b></div>,
+            <div><strong>{order.customer?.name}</strong><br /><a href={`tel:${order.customer?.phone}`}>{order.customer?.phone}</a><br /><a href={`mailto:${order.customer?.email}`}>{order.customer?.email}</a></div>,
+            order.address,
+            <div><span>{order.paymentMode}</span><br /><select value={order.paymentStatus} onChange={(event) => update(order, { paymentStatus: event.target.value })}><option>Pending</option><option>Completed</option></select></div>,
+            <select value={order.orderStatus} onChange={(event) => update(order, { orderStatus: event.target.value })}>{trackingStatuses.map((value) => <option key={value}>{value}</option>)}</select>,
+          ])}
+        />
+      )}
+    </AdminSection>
+  );
+}
+
 function AdminSection({ title, subtitle, children }) {
   return (
     <section className="admin-dashboard">
@@ -703,6 +784,7 @@ export default function App() {
             <button onClick={() => setPage("products")}>
               Ecommerce Products
             </button>
+            <button onClick={() => setPage("buying")}>Buying Details</button>
             <button onClick={() => setPage("counselling")}>Student Counselling</button>
           </nav>
         </Container>
@@ -720,6 +802,7 @@ export default function App() {
       {page === "centers" && <EducationCenters notify={notify} />}{" "}
       {page === "support" && <SupportTickets notify={notify} />}{" "}
       {page === "products" && <Products notify={notify} />}
+      {page === "buying" && <BuyingDetails notify={notify} />}
       {page === "counselling" && <StudentCounselling notify={notify} />}
     </div>
   );
