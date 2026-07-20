@@ -1,7 +1,4 @@
-// In production, keep browser requests on the client origin and let
-// vercel.json forward /api to Render. This prevents a Vercel environment
-// override from sending login requests cross-origin and triggering CORS.
-const configuredApiUrl = import.meta.env.DEV ? import.meta.env.VITE_API_URL : '/api';
+const configuredApiUrl = import.meta.env.VITE_API_URL;
 export const API = (configuredApiUrl || '/api').replace(/\/$/, '');
 const publicRequestCache = new Map();
 const PUBLIC_CACHE_TTL_MS = 60_000;
@@ -9,7 +6,7 @@ const PUBLIC_CACHE_TTL_MS = 60_000;
 async function fetchPublicJson(url) {
   const cached = publicRequestCache.get(url);
   if (cached && Date.now() - cached.createdAt < PUBLIC_CACHE_TTL_MS) return cached.promise;
-  const promise = fetch(url, { cache: 'default' }).then(async (response) => {
+  const promise = fetch(url, { cache: 'default', credentials: 'include' }).then(async (response) => {
     if (!response.ok) throw new Error('Unable to load data from MongoDB right now.');
     if (!isJsonResponse(response)) throw new Error('The backend API is not connected yet.');
     return response.json();
@@ -64,9 +61,15 @@ export async function fetchAllEducationItems(options = {}) {
   return fetchPublicJson(`${API}/education`);
 }
 
+export function searchEducationCenters(params = {}) {
+  const query = buildQueryString({ q: params.query, type: params.type });
+  return apiRequest(`/education/search${query}`, { method: 'GET' });
+}
+
 export async function fetchEducationItemDetails(itemId, options = {}) {
   const response = await fetch(`${API}/education/details/${encodeURIComponent(itemId)}`, {
     cache: 'no-store',
+    credentials: 'include',
     ...options
   });
 
@@ -97,6 +100,7 @@ async function apiRequest(path, options = {}) {
 
   try {
     response = await fetch(`${API}${path}`, {
+      credentials: 'include',
       ...options,
       headers: buildRequestHeaders(options)
     });

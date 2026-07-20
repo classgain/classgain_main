@@ -23,7 +23,7 @@ const emptyProduct = {
   brand: "",
   rating: "0",
   status: true,
-  image: null,
+  images: [],
 };
 const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
 
@@ -34,6 +34,7 @@ async function request(path, options = {}, attempt = 0) {
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(`${API}${path}`, {
     cache: "no-store",
+    credentials: "include",
     ...options,
     headers,
   });
@@ -431,13 +432,19 @@ function Products({ notify }) {
     setForm((f) => ({
       ...f,
       [name]:
-        type === "checkbox" ? checked : type === "file" ? files[0] : value,
+        type === "checkbox" ? checked : type === "file" ? Array.from(files).slice(0, 4) : value,
     }));
   };
   const submit = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    Object.entries(form).forEach(([k, v]) => v !== null && data.append(k, v));
+    Object.entries(form).forEach(([k, v]) => {
+      if (k === "images") {
+        v.forEach((file) => data.append("images", file));
+      } else if (v !== null) {
+        data.append(k, v);
+      }
+    });
     try {
       const d = await request(
         `/admin/products${editing ? `/${editing}` : ""}`,
@@ -455,7 +462,7 @@ function Products({ notify }) {
     setEditing(p._id);
     setForm({
       ...p,
-      image: null,
+      images: [],
       price: String(p.price),
       discount: String(p.discount),
       stock: String(p.stock),
@@ -482,12 +489,14 @@ function Products({ notify }) {
     >
       <form className="product-form" onSubmit={submit}>
         <input
-          name="image"
+          name="images"
           type="file"
           accept="image/*"
+          multiple
           onChange={change}
           required={!editing}
         />
+        <small className="product-form__image-help">Choose 1–4 product photos. The first photo appears on storefront cards.</small>
         <input
           name="name"
           placeholder="Product name"

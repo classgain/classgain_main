@@ -8,6 +8,8 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.product-form__image-help{align-self:center;color:#5f7283;font-size:.78rem;font-weight:700}
+
 * {
   box-sizing: border-box;
 }

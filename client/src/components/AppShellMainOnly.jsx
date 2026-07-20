@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Container, Nav, Navbar } from 'react-bootstrap';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import logo from '../assets/navbarlogo_clientpage.png';
+import SearchRibbon from './SearchRibbon';
 
 const baseTopLinks = [
   { label: 'Help', to: '/help-center' },
@@ -32,6 +33,7 @@ export default function AppShellMainOnly() {
   const topLinks = location.pathname.startsWith('/ecommerce-orders')
     ? [...baseTopLinks.slice(0, 2), ...orderTopLinks, ...accountTopLinks]
     : [...baseTopLinks, ...accountTopLinks];
+  const isEcommerceArea = location.pathname.startsWith('/ecommerce');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -121,6 +123,8 @@ export default function AppShellMainOnly() {
           </Nav>
         </Container>
       </Navbar>
+
+      {!isEcommerceArea ? <SearchRibbon /> : null}
 
       {/* Page Content */}
       <main>

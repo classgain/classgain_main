@@ -23,6 +23,56 @@ function normalizeText(value, fallback = '') {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+const searchStopWords = new Set([
+  'a', 'an', 'and', 'at', 'best', 'center', 'centers', 'centre', 'centres', 'education',
+  'find', 'for', 'in', 'near', 'of', 'the', 'top'
+]);
+
+const searchCategoryAliases = {
+  primary: ['school', 'schools', 'primary'],
+  secondary: ['college', 'colleges', 'higher'],
+  extra: ['coaching', 'academy', 'academies', 'training']
+};
+
+function getRequestedCategory(type = '', query = '') {
+  const normalizedType = normalizeText(type).toLowerCase();
+  if (validEducationCategoryKeys.includes(normalizedType)) return normalizedType;
+
+  const words = normalizeText(query).toLowerCase().match(/[a-z0-9]+/g) || [];
+  return Object.entries(searchCategoryAliases).find(([, aliases]) =>
+    aliases.some((alias) => words.includes(alias))
+  )?.[0] || '';
+}
+
+function getSearchTerms(query = '') {
+  const categoryWords = new Set(Object.values(searchCategoryAliases).flat());
+  return (normalizeText(query).toLowerCase().match(/[a-z0-9]+/g) || [])
+    .filter((word) => !/^\d+$/.test(word) && !searchStopWords.has(word) && !categoryWords.has(word));
+}
+
+function scoreEducationItem(item, terms) {
+  if (!terms.length) return 1;
+
+  const title = normalizeText(item.title).toLowerCase();
+  const address = normalizeText(item.address).toLowerCase();
+  const courses = normalizeText(item.courseList).toLowerCase();
+  const description = normalizeText(item.description).toLowerCase();
+  let score = 0;
+  let matchedTerms = 0;
+
+  for (const term of terms) {
+    let termScore = 0;
+    if (title.includes(term)) termScore += 5;
+    if (address.includes(term)) termScore += 4;
+    if (courses.includes(term)) termScore += 3;
+    if (description.includes(term)) termScore += 1;
+    if (termScore > 0) matchedTerms += 1;
+    score += termScore;
+  }
+
+  return matchedTerms === terms.length ? score : 0;
+}
+
 function formatDateLabel(date = new Date()) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
@@ -251,6 +301,42 @@ export async function getAllEducationCenters(_req, res, next) {
       category: 'all',
       items: approvedCenters.map((center) => buildApprovedEducationCenterPublicItem(center))
     });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function searchEducationCenters(req, res, next) {
+  try {
+    const query = normalizeText(req.query.q).slice(0, 120);
+    const category = getRequestedCategory(req.query.type, query);
+    const terms = getSearchTerms(query);
+    const approvedCenters = await EducationCenter.find({ status: 'Approved' })
+      .sort({ created_at: -1 })
+      .limit(500)
+      .lean();
+    const publicItems = approvedCenters.map((center) => buildApprovedEducationCenterPublicItem(center));
+    const approvedEmails = publicItems.map((item) => item.contactEmail).filter(Boolean);
+    const partners = await EducationPartner.find({ officialEmail: { $in: approvedEmails } }).lean();
+    const profiles = await EducationCenterUpload.find({ partnerId: { $in: partners.map((partner) => partner._id) } }).lean();
+    const partnerEmailById = new Map(partners.map((partner) => [String(partner._id), partner.officialEmail]));
+    const profileByEmail = new Map(profiles.map((profile) => [partnerEmailById.get(String(profile.partnerId)), profile]));
+
+    const items = publicItems
+      .map((item) => {
+        const profile = profileByEmail.get(item.contactEmail);
+        if (!profile) return item;
+        const profileItem = buildPublicItemFromProfile(profile);
+        return { ...item, ...profileItem, id: item.id, category: item.category };
+      })
+      .filter((item) => !category || item.category === category)
+      .map((item) => ({ item, relevance: scoreEducationItem(item, terms) }))
+      .filter(({ relevance }) => relevance > 0)
+      .sort((first, second) => second.relevance - first.relevance || String(first.item.title).localeCompare(String(second.item.title)))
+      .slice(0, 50)
+      .map(({ item }) => item);
+
+    return res.json({ success: true, query, category: category || 'all', count: items.length, items });
   } catch (error) {
     return next(error);
   }

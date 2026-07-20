@@ -4,6 +4,7 @@ export const productCategories = ['Books & Notes', 'Writing Things', 'Electronic
 
 const productSchema = new mongoose.Schema({
   image: { type: String, required: true },
+  images: { type: [String], default: [] },
   name: { type: String, required: true, trim: true, index: true },
   slug: { type: String, required: true, unique: true, index: true },
   category: { type: String, required: true, enum: productCategories, index: true },

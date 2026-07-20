@@ -1,7 +1,4 @@
-// Production requests stay on the seller origin and are forwarded by
-// vercel.json. This prevents a deployment-level VITE_API_URL override from
-// bypassing the proxy and triggering browser CORS failures against Render.
-const configuredApiUrl = import.meta.env.DEV ? import.meta.env.VITE_API_URL : '/api';
+const configuredApiUrl = import.meta.env.VITE_API_URL;
 export const API = (configuredApiUrl || '/api').replace(/\/$/, '');
 
 function isJsonResponse(response) {
@@ -42,6 +39,7 @@ function buildQueryString(params = {}) {
 export async function fetchEducationItems(category, options = {}) {
   const response = await fetch(`${API}/education/${encodeURIComponent(category)}`, {
     cache: 'no-store',
+    credentials: 'include',
     ...options
   });
 
@@ -59,6 +57,7 @@ export async function fetchEducationItems(category, options = {}) {
 export async function fetchAllEducationItems(options = {}) {
   const response = await fetch(`${API}/education`, {
     cache: 'no-store',
+    credentials: 'include',
     ...options
   });
 
@@ -76,6 +75,7 @@ export async function fetchAllEducationItems(options = {}) {
 export async function fetchEducationItemDetails(itemId, options = {}) {
   const response = await fetch(`${API}/education/details/${encodeURIComponent(itemId)}`, {
     cache: 'no-store',
+    credentials: 'include',
     ...options
   });
 
@@ -102,6 +102,7 @@ async function apiRequest(path, options = {}) {
 
   try {
     response = await fetch(`${API}${path}`, {
+      credentials: 'include',
       ...options,
       headers: buildRequestHeaders(options)
     });

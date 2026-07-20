@@ -73,8 +73,23 @@ function splitOrigins(value = '') {
 }
 
 function createAllowedOrigins() {
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5175',
+    'https://classgain.com',
+    'https://www.classgain.com',
+    'https://studeup.com',
+    'https://www.studeup.com',
+    'https://classgain-admin.com'
+  ];
+
   return new Set(
     [
+      ...defaultOrigins,
       process.env.FRONTEND_URLS,
       process.env.CLIENT_URL,
       process.env.SELLER_URL,
@@ -132,17 +147,18 @@ function corsOrigin(origin, callback) {
 
   const normalizedOrigin = origin.replace(/\/$/, '');
 
-  if (!isProduction || allowedOrigins.has(normalizedOrigin)) {
+  if (allowedOrigins.has(normalizedOrigin)) {
     return callback(null, true);
   }
 
-  const corsError = new Error('Origin is not allowed by CORS.');
+  const corsError = new Error(`Origin ${origin} is not allowed by CORS.`);
   corsError.status = 403;
   return callback(corsError);
 }
 
 const corsOptions = {
   origin: corsOrigin,
+  credentials: true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key'],
   maxAge: 86400
