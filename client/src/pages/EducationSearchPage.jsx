@@ -30,7 +30,7 @@ export default function EducationSearchPage() {
       <Container fluid="xl">
         <span className="name-tag">Education Search</span>
         <h1 className="section-title mt-3">{query ? `Results for “${query}”` : 'Browse education centers'}</h1>
-        <p className="section-note mb-4">Search results include center names, locations, and available courses from MongoDB.</p>
+        <p className="section-note mb-4">Search results include center names, locations,  courses name.</p>
 
         {state.loading ? <div className="status-panel"><Spinner animation="border" /><span>Searching education centers...</span></div> : null}
         {state.error ? <Alert variant="danger">{state.error}</Alert> : null}

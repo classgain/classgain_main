@@ -50,7 +50,7 @@ export default function SearchRibbon() {
           />
           <button type="submit" aria-label="Search education centers">Search</button>
         </form>
-        <p className="education-search-bar__hint">Education area only — ecommerce products use the separate ecommerce search.</p>
+
       </Container>
     </section>
   );
