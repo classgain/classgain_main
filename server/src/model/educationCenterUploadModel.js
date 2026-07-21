@@ -129,6 +129,9 @@ const applicationSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    documentName: { type: String, trim: true },
+    documentType: { type: String, trim: true },
+    documentData: { type: String },
     scholarshipInterest: {
       type: Boolean,
       default: false

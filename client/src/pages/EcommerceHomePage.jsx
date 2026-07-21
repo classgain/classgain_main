@@ -12,7 +12,8 @@ function resolveImage(path) {
 }
 
 function productImages(product) {
-  return [...new Set([...(product.images || []), product.image].filter(Boolean))].map(resolveImage);
+  const images = Array.isArray(product?.images) ? product.images : [];
+  return [...new Set([...images, product?.image].filter(Boolean))].map(resolveImage);
 }
 
 function ProductImage({ src, alt, className = '' }) {
@@ -93,11 +94,13 @@ export default function EcommerceHomePage() {
   const visible = useMemo(() => products.filter((product) => !delivery || (delivery === 'fast' ? product.fastDelivery : product.smoothDelivery)), [products, delivery]);
   const brands = [...new Set(products.map((product) => product.brand).filter(Boolean))];
   const addToCart = (product) => setCart((items) => [...items, product]);
+  const removeFromCart = (indexToRemove) => setCart((items) => items.filter((_, index) => index !== indexToRemove));
 
   return (
     <div className="shop-page">
       <section className="shop-hero"><Container fluid="xl"><div className="shop-hero__content"><span className="home-hero__label">Student Store</span><h1>Everything students need, in one place.</h1><p>Click a product to view every photo and complete a secure checkout.</p></div><aside className="shop-cart-summary"><span>Cart Items</span><strong>{cart.length}</strong><p>Rs. {cart.reduce((sum, product) => sum + product.finalPrice, 0).toFixed(2)}</p></aside></Container></section>
       <section className="shop-products"><Container fluid="xl">
+        {cart.length > 0 && <aside className="shop-cart-items" aria-label="Shopping cart"><h2>Your Cart</h2><div>{cart.map((product, index) => <article key={`${product._id}-${index}`}><ProductImage src={productImages(product)[0]} alt={product.name} /><span><strong>{product.name}</strong><small>Rs. {Number(product.finalPrice).toFixed(2)}</small></span><button type="button" onClick={() => setSelectedProduct(product)}>View Photos</button><button type="button" className="cart-remove" onClick={() => removeFromCart(index)} aria-label={`Remove ${product.name} from cart`}>Remove</button></article>)}</div></aside>}
         <nav className="shop-category-nav"><button className={!category ? 'active' : ''} onClick={() => setCategory('')}>All</button>{categories.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => setCategory(item)}>{item}</button>)}</nav>
         <div className="shop-filters"><input type="search" placeholder="Search products" value={search} onChange={(event) => setSearch(event.target.value)} /><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="priceAsc">Price Low to High</option><option value="priceDesc">Price High to Low</option><option value="discount">Highest Discount</option></select><select value={brand} onChange={(event) => setBrand(event.target.value)}><option value="">All Brands</option>{brands.map((item) => <option key={item}>{item}</option>)}</select><select value={delivery} onChange={(event) => setDelivery(event.target.value)}><option value="">All Delivery</option><option value="fast">Fast Delivery</option><option value="smooth">Smooth Delivery</option></select><input type="number" placeholder="Min price" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} /><input type="number" placeholder="Max price" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} /></div>
         {loading ? <div className="shop-state"><Spinner animation="border" /> Loading products...</div> : error ? <div className="alert alert-danger">{error}</div> : !visible.length ? <div className="shop-state">No products match these filters.</div> : (

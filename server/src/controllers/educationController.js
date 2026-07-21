@@ -450,6 +450,11 @@ export async function createEducationApplication(req, res, next) {
     const completedStudyPercentage = normalizeText(req.body.completedStudyPercentage || req.body.percentage);
     const address = normalizeText(req.body.address);
     const scholarshipInterest = req.body.scholarshipInterest === true || req.body.scholarshipInterest === 'true';
+    const documentData = String(req.body.documentData || '');
+
+    if (documentData && (!/^data:(application\/pdf|image\/(jpeg|png));base64,/i.test(documentData) || documentData.length > 2_800_000)) {
+      return res.status(400).json({ success: false, message: 'Supporting document must be a PDF, JPG, JPEG, or PNG no larger than 2 MB.' });
+    }
 
     if (!studentName || !mobile || !course || !currentStudy || !completedStudy || !completedStudyPercentage || !address) {
       return res.status(400).json({
@@ -478,6 +483,9 @@ export async function createEducationApplication(req, res, next) {
       completedStudyPercentage,
       previousEducation: completedStudy,
       marks: completedStudyPercentage,
+      documentName: normalizeText(req.body.documentName),
+      documentType: normalizeText(req.body.documentType),
+      documentData,
       scholarshipInterest,
       scholarshipName,
       statement: normalizeText(

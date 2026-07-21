@@ -1,3 +1,7 @@
+.shop-cart-items{margin-bottom:1.5rem;padding:1rem;border:1px solid #dce5ee;border-radius:1rem;background:#fff}.shop-cart-items h2{margin:0 0 .8rem;color:#0b294d;font-size:1.25rem}.shop-cart-items>div{display:grid;gap:.65rem}.shop-cart-items article{display:grid;grid-template-columns:64px minmax(140px,1fr) auto auto;gap:.7rem;align-items:center;padding:.55rem;border-radius:.7rem;background:#f6f9fc}.shop-cart-items article>img,.shop-cart-items article>.product-image-placeholder{width:64px;height:64px;min-height:64px;object-fit:contain;border-radius:.45rem}.shop-cart-items article span{display:grid}.shop-cart-items article small{color:#198754;font-weight:800}.shop-cart-items button{border:0;border-radius:.5rem;padding:.55rem .75rem;color:#fff;background:#1257a6;font-weight:800}.shop-cart-items .cart-remove{background:#9b2733}@media(max-width:650px){.shop-cart-items article{grid-template-columns:56px 1fr}.shop-cart-items article>button{grid-row:2}.shop-cart-items article>img,.shop-cart-items article>.product-image-placeholder{width:56px;height:56px;min-height:56px}}
+
+.product-gallery{grid-template-columns:1fr!important}.product-gallery__thumbs{order:2!important;flex-direction:row!important;overflow-x:auto}.product-gallery__thumbs button{flex:0 0 76px}
+
 :root {
   --wn-blue: #123a63;
   --wn-blue-deep: #081f3a;
@@ -2716,8 +2720,23 @@ body {
   font-weight: 900;
 }
 
+.course-apply-modal {
+  position: fixed;
+  z-index: 2500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background: rgba(3, 18, 36, 0.72);
+  backdrop-filter: blur(4px);
+}
+
 .course-apply-panel {
-  margin-top: 1.35rem;
+  width: min(820px, 100%);
+  max-height: calc(100vh - 2.5rem);
+  overflow-y: auto;
+  margin: auto;
   padding: 1.3rem;
   border: 1px solid rgba(8, 31, 58, 0.08);
   border-radius: 8px;
@@ -2771,6 +2790,11 @@ body {
   color: #07172d;
   font-size: 0.88rem;
   font-weight: 800;
+}
+
+.course-apply-form label > small {
+  color: #64748b;
+  font-size: 0.78rem;
 }
 
 .course-apply-form input,

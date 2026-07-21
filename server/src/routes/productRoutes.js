@@ -1,12 +1,17 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
 import { createProduct, deleteProduct, getProduct, listCategoryProducts, listProducts, updateProduct } from '../controllers/productController.js';
-const directory = path.resolve(process.env.UPLOAD_DIR || 'uploads', 'products');
-fs.mkdirSync(directory, { recursive: true });
-const upload = multer({ storage: multer.diskStorage({ destination: directory, filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '-')}`) }), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => cb(file.mimetype.startsWith('image/') ? null : new Error('Only image uploads are allowed.'), file.mimetype.startsWith('image/')) });
+
+const supportedImageTypes = new Set(['image/jpeg', 'image/png']);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 5 },
+  fileFilter: (_req, file, cb) => {
+    const supported = supportedImageTypes.has(file.mimetype);
+    cb(supported ? null : new Error('Only JPG, JPEG, and PNG product photos are allowed.'), supported);
+  }
+});
 const router = Router();
 router.get('/products', listProducts); router.get('/products/category/:category', listCategoryProducts); router.get('/products/:id', getProduct);
-router.post('/admin/products', upload.array('images', 4), createProduct); router.put('/admin/products/:id', upload.array('images', 4), updateProduct); router.delete('/admin/products/:id', deleteProduct);
+router.post('/admin/products', upload.array('images', 5), createProduct); router.put('/admin/products/:id', upload.array('images', 5), updateProduct); router.delete('/admin/products/:id', deleteProduct);
 export default router;

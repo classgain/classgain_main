@@ -89,8 +89,22 @@ const initialApplicationForm = {
   completedStudy: '',
   completedStudyPercentage: '',
   address: '',
-  scholarshipInterest: false
+  scholarshipInterest: false,
+  documentName: '',
+  documentType: '',
+  documentData: ''
 };
+
+const MAX_APPLICATION_DOCUMENT_BYTES = 2 * 1024 * 1024;
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function DetailIcon({ index }) {
   const icons = [
@@ -225,6 +239,26 @@ export default function EducationDetailsPage() {
     }
   };
 
+  const handleDocumentChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setApplicationForm((current) => ({ ...current, documentName: '', documentType: '', documentData: '' }));
+      return;
+    }
+    if (file.size > MAX_APPLICATION_DOCUMENT_BYTES) {
+      event.target.value = '';
+      setApplicationStatus({ type: 'error', message: 'Supporting document must be 2 MB or smaller.' });
+      return;
+    }
+    try {
+      const documentData = await readFileAsDataUrl(file);
+      setApplicationForm((current) => ({ ...current, documentName: file.name, documentType: file.type, documentData }));
+      setApplicationStatus({ type: '', message: '' });
+    } catch (_error) {
+      setApplicationStatus({ type: 'error', message: 'The supporting document could not be loaded.' });
+    }
+  };
+
   const handleApplicationSubmit = async (event) => {
     event.preventDefault();
 
@@ -327,11 +361,12 @@ export default function EducationDetailsPage() {
           </div>
 
           {selectedCourse ? (
-            <div className="course-apply-panel">
+            <div className="course-apply-modal" role="dialog" aria-modal="true" aria-labelledby="course-apply-title" onMouseDown={() => setSelectedCourse(null)}>
+            <div className="course-apply-panel" onMouseDown={(event) => event.stopPropagation()}>
               <div className="course-apply-panel__header">
                 <div>
-                  <span>Application Form</span>
-                  <h3>{selectedCourse.name}</h3>
+                  <span>{item.title} · Application Form</span>
+                  <h3 id="course-apply-title">{selectedCourse.name}</h3>
                 </div>
                 <button type="button" onClick={() => setSelectedCourse(null)} aria-label="Close application form">
                   Close
@@ -363,6 +398,11 @@ export default function EducationDetailsPage() {
                   <span>Student address</span>
                   <textarea name="address" value={applicationForm.address} onChange={handleApplicationChange} rows="3" placeholder="Full student address" />
                 </label>
+                <label className="course-apply-form__wide">
+                  <span>Supporting document</span>
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={handleDocumentChange} />
+                  <small>PDF, JPG, JPEG, or PNG · maximum 2 MB{applicationForm.documentName ? ` · ${applicationForm.documentName}` : ''}</small>
+                </label>
                 <label className="course-apply-form__check">
                   <input
                     type="checkbox"
@@ -385,6 +425,7 @@ export default function EducationDetailsPage() {
                   </button>
                 </div>
               </form>
+            </div>
             </div>
           ) : null}
         </section>

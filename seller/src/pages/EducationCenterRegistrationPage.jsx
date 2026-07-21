@@ -4,6 +4,7 @@ import { registerEducationCenter } from '../services/api';
 import './Loginpage-Design.css';
 
 const categoryOptions = ['School', 'College', 'Coaching Center'];
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 const initialRegistrationForm = {
   educationCenterName: '',
@@ -63,6 +64,14 @@ export default function EducationCenterRegistrationPage() {
     if (!file) {
       setFormData((current) => ({ ...current, [key]: '' }));
       setUploadNames((current) => ({ ...current, [key]: '' }));
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      event.target.value = '';
+      setFormData((current) => ({ ...current, [key]: '' }));
+      setUploadNames((current) => ({ ...current, [key]: '' }));
+      setStatus({ type: 'error', message: `${file.name} is larger than the 100 MB upload limit.` });
       return;
     }
 
@@ -255,6 +264,7 @@ export default function EducationCenterRegistrationPage() {
                   required={!['logo'].includes(field.key)}
                 />
                 {uploadNames[field.key] ? <small className="portal-form__hint">{uploadNames[field.key]}</small> : null}
+                <small className="portal-form__hint">Maximum file size: 100 MB</small>
               </label>
             ))}
           </div>

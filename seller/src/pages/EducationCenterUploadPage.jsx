@@ -10,6 +10,8 @@ import { createEducationCenterUpload } from '../services/api';
 import { readStoredPartnerSession } from '../services/partnerSession';
 import './Loginpage-Design.css';
 
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -68,6 +70,12 @@ export default function EducationCenterUploadPage() {
       return;
     }
 
+    if (file.size > MAX_UPLOAD_BYTES) {
+      event.target.value = '';
+      setStatus({ type: 'error', message: `${file.name} is larger than the 100 MB upload limit.` });
+      return;
+    }
+
     try {
       const image = await readFileAsDataUrl(file);
       setFormData((current) => ({ ...current, image }));
@@ -80,6 +88,12 @@ export default function EducationCenterUploadPage() {
   const handleProfileImageChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      event.target.value = '';
+      setStatus({ type: 'error', message: `${file.name} is larger than the 100 MB upload limit.` });
       return;
     }
 
@@ -174,6 +188,7 @@ export default function EducationCenterUploadPage() {
               <label className="portal-form__field">
                 <span>College main image</span>
                 <input type="file" accept="image/*" onChange={handleImageChange} />
+                <small className="portal-form__hint">Maximum file size: 100 MB</small>
               </label>
 
               {previewImage ? <img className="portal-form__preview" src={previewImage} alt="Education center preview" /> : null}
@@ -181,6 +196,7 @@ export default function EducationCenterUploadPage() {
               <label className="portal-form__field">
                 <span>College profile image</span>
                 <input type="file" accept="image/*" onChange={handleProfileImageChange} />
+                <small className="portal-form__hint">Maximum file size: 100 MB</small>
               </label>
 
               {profilePreviewImage ? <img className="portal-form__preview portal-form__preview--small" src={profilePreviewImage} alt="Education center profile preview" /> : null}

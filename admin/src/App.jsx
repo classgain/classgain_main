@@ -29,7 +29,7 @@ const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
 
 async function request(path, options = {}, attempt = 0) {
   const headers = new Headers(options.headers || {});
-  const adminKey = import.meta.env.VITE_ADMIN_API_KEY;
+  const adminKey = sessionStorage.getItem("what-next-admin-key") || import.meta.env.VITE_ADMIN_API_KEY;
   if (adminKey) headers.set("X-Admin-Key", adminKey);
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(`${API}${path}`, {
@@ -222,7 +222,8 @@ function EducationCenters({ notify }) {
               ])}
             />
             {selected && (
-              <section className="admin-detail-panel">
+              <div className="admin-modal-backdrop" onMouseDown={() => setSelected(null)}>
+              <section className="admin-detail-panel admin-detail-modal" onMouseDown={(event) => event.stopPropagation()}>
                 <div className="admin-detail-panel__header">
                   <div>
                     <span>Selected Center</span>
@@ -233,6 +234,7 @@ function EducationCenters({ notify }) {
                   >
                     {selected.status}
                   </Badge>
+                  <button onClick={() => setSelected(null)}>Close</button>
                 </div>
                 <div className="admin-detail-grid">
                   <div>
@@ -269,7 +271,9 @@ function EducationCenters({ notify }) {
                     <strong>{selected.username}</strong>
                   </div>
                 </div>
+                <div className="admin-popup-actions"><button onClick={() => action(selected.id, "approve")}>Approve</button><button onClick={() => action(selected.id, "reject")}>Reject</button></div>
               </section>
+              </div>
             )}
           </>
         )}
@@ -281,7 +285,9 @@ function EducationCenters({ notify }) {
 function SupportTickets({ notify }) {
   const [type, setType] = useState("student"),
     [items, setItems] = useState([]),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [selected, setSelected] = useState(null),
+    [response, setResponse] = useState("");
   const load = () => {
     setLoading(true);
     return request(`/support-tickets/admin/${type}`)
@@ -318,8 +324,8 @@ function SupportTickets({ notify }) {
     }
   };
   const reply = (ticket) => {
-    const value = prompt("Enter reply", ticket.reply || "");
-    if (value !== null) update(ticket, { reply: value, status: "In Progress" });
+    setSelected(ticket);
+    setResponse(ticket.reply || "");
   };
   return (
     <AdminSection
@@ -386,7 +392,7 @@ function SupportTickets({ notify }) {
               </select>,
               date(t.createdAt || t.created_at),
               <Actions>
-                <button onClick={() => reply(t)}>Reply</button>
+                <button onClick={() => reply(t)}>View / Respond</button>
                 <button onClick={() => update(t, { status: "Closed" })}>
                   Close
                 </button>
@@ -399,6 +405,7 @@ function SupportTickets({ notify }) {
           })}
         />
       )}
+      {selected && <div className="admin-modal-backdrop" onMouseDown={() => setSelected(null)}><section className="admin-detail-panel admin-detail-modal" onMouseDown={(event) => event.stopPropagation()}><div className="admin-detail-panel__header"><div><span>{selected.ticketId || selected.ticket_id}</span><h2>{selected.subject}</h2></div><button onClick={() => setSelected(null)}>Close</button></div><p><b>From:</b> {type === "student" ? selected.studentName : selected.education_center_name} · {selected.email}</p><h3>Complete request</h3><p>{selected.message || selected.full_details || selected.how_can_we_help}</p><label>Admin response<textarea rows="5" value={response} onChange={(event) => setResponse(event.target.value)} /></label><div className="admin-popup-actions">{["Open","In Progress","Closed"].map((value) => <button key={value} onClick={() => { update(selected, { reply: response, status: value }); setSelected(null); }}>{value === "Closed" ? "Problem Solved" : value}</button>)}</div><button onClick={() => { update(selected, { reply: response, status: "In Progress" }); setSelected(null); }}>Submit Response</button></section></div>}
     </AdminSection>
   );
 }
@@ -432,7 +439,7 @@ function Products({ notify }) {
     setForm((f) => ({
       ...f,
       [name]:
-        type === "checkbox" ? checked : type === "file" ? Array.from(files).slice(0, 4) : value,
+        type === "checkbox" ? checked : type === "file" ? Array.from(files).slice(0, 5) : value,
     }));
   };
   const submit = async (e) => {
@@ -491,12 +498,12 @@ function Products({ notify }) {
         <input
           name="images"
           type="file"
-          accept="image/*"
+          accept=".jpg,.jpeg,.png,image/jpeg,image/png"
           multiple
           onChange={change}
           required={!editing}
         />
-        <small className="product-form__image-help">Choose 1–4 product photos. The first photo appears on storefront cards.</small>
+        <small className="product-form__image-help">Choose 1–5 JPG, JPEG, or PNG photos (maximum 2 MB each). The first photo appears on storefront cards.</small>
         <input
           name="name"
           placeholder="Product name"
@@ -675,6 +682,7 @@ function BuyingDetails({ notify }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [selected, setSelected] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -715,7 +723,7 @@ function BuyingDetails({ notify }) {
       </div>
       {loading ? <Spinner animation="border" /> : (
         <Table
-          headers={["Order / Date", "Purchased Item", "Student Contact", "Shipping Address", "Payment", "Tracking Status"]}
+          headers={["Order / Date", "Purchased Item", "Student Contact", "Shipping Address", "Payment", "Tracking Status", "Details"]}
           rows={items.map((order) => [
             <div><strong>{order.orderNumber}</strong><br /><small>{date(order.createdAt)}</small></div>,
             <div><strong>{order.productName}</strong><br /><span>{order.quantity} × Rs. {order.unitPrice}</span><br /><b>Total: Rs. {order.totalAmount}</b></div>,
@@ -723,9 +731,11 @@ function BuyingDetails({ notify }) {
             order.address,
             <div><span>{order.paymentMode}</span><br /><select value={order.paymentStatus} onChange={(event) => update(order, { paymentStatus: event.target.value })}><option>Pending</option><option>Completed</option></select></div>,
             <select value={order.orderStatus} onChange={(event) => update(order, { orderStatus: event.target.value })}>{trackingStatuses.map((value) => <option key={value}>{value}</option>)}</select>,
+            <button onClick={() => setSelected(order)}>View Details</button>,
           ])}
         />
       )}
+      {selected && <div className="admin-modal-backdrop" onMouseDown={() => setSelected(null)}><section className="admin-detail-panel admin-detail-modal" onMouseDown={(event) => event.stopPropagation()}><div className="admin-detail-panel__header"><div><span>Order {selected.orderNumber}</span><h2>{selected.productName}</h2></div><button onClick={() => setSelected(null)}>Close</button></div><div className="admin-detail-grid"><div><span>Customer</span><strong>{selected.customer?.name}</strong></div><div><span>Contact</span><strong>{selected.customer?.email}<br/>{selected.customer?.phone}</strong></div><div><span>Shipping address</span><strong>{selected.address}</strong></div><div><span>Quantity and total</span><strong>{selected.quantity} × Rs. {selected.unitPrice}<br/>Rs. {selected.totalAmount}</strong></div><div><span>Payment</span><strong>{selected.paymentMode} · {selected.paymentStatus}</strong></div><div><span>Order status</span><strong>{selected.orderStatus}</strong></div></div><div className="admin-popup-actions">{trackingStatuses.map((value)=><button key={value} onClick={()=>{ update(selected,{orderStatus:value}); setSelected(null); }}>{value}</button>)}</div></section></div>}
     </AdminSection>
   );
 }
@@ -773,13 +783,36 @@ function Table({ headers, rows }) {
 function Actions({ children }) {
   return <div className="admin-row-actions">{children}</div>;
 }
+function AdminLogin({ onAuthenticated }) {
+  const [key, setKey] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const submit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    sessionStorage.setItem("what-next-admin-key", key.trim());
+    try {
+      await request("/admin/orders");
+      onAuthenticated();
+    } catch (requestError) {
+      sessionStorage.removeItem("what-next-admin-key");
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  return <main className="admin-auth-page"><form className="admin-auth-card" onSubmit={submit}><img src={logo} alt="What Next Admin"/><h1>Admin authentication</h1><p>Enter the same admin key configured as <code>ADMIN_API_KEY</code> on the server.</p>{error && <Alert variant="danger">{error}</Alert>}<label>Admin key<input type="password" value={key} onChange={(event)=>setKey(event.target.value)} required autoFocus/></label><button disabled={loading}>{loading ? "Checking..." : "Open Admin Dashboard"}</button></form></main>;
+}
 export default function App() {
   const [page, setPage] = useState("centers"),
-    [notice, setNotice] = useState(null);
+    [notice, setNotice] = useState(null),
+    [authenticated, setAuthenticated] = useState(Boolean(sessionStorage.getItem("what-next-admin-key") || import.meta.env.VITE_ADMIN_API_KEY));
   const notify = (type, message) => {
     setNotice({ type, message });
     setTimeout(() => setNotice(null), 3500);
   };
+  if (!authenticated) return <AdminLogin onAuthenticated={() => setAuthenticated(true)} />;
   return (
     <div className="admin-page">
       <header className="admin-header">
@@ -795,6 +828,7 @@ export default function App() {
             </button>
             <button onClick={() => setPage("buying")}>Buying Details</button>
             <button onClick={() => setPage("counselling")}>Student Counselling</button>
+            <button onClick={() => { sessionStorage.removeItem("what-next-admin-key"); setAuthenticated(false); }}>Log Out</button>
           </nav>
         </Container>
       </header>
