@@ -372,7 +372,7 @@ async function connectDatabase() {
   try {
     await configureMongoDns();
     await mongoose.connect(mongoUri, {
-      maxPoolSize: 10,
+      maxPoolSize: 100,
       minPoolSize: 0,
       serverSelectionTimeoutMS: 10000
     });
