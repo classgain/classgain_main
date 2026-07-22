@@ -29,10 +29,10 @@ const studentSidebarLinks = [
   ,{ key: 'orders', label: 'Your Orders', icon: 'application' }
 ];
 
-function StudentCounsellingDashboard({ token }) {
+function StudentCounsellingDashboard({ token, refreshKey }) {
   const [requests,setRequests] = useState([]), [notifications,setNotifications] = useState([]), [loading,setLoading] = useState(true), [error,setError] = useState(''), [selected,setSelected] = useState(null);
   const load = () => Promise.all([fetchMyCounselling(token),fetchNotifications(token)]).then(([requestsData,notificationsData]) => { setRequests(requestsData.items || []); setNotifications(notificationsData.items || []); }).catch((e)=>setError(e.message)).finally(()=>setLoading(false));
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { setLoading(true); setError(''); load(); }, [token, refreshKey]);
   const read = async (item) => { if (!item.isRead) { await markNotificationRead(item._id,token); load(); } };
   const baseUrl = API.replace(/\/api$/, '');
   if (loading) return <div className="student-counselling-loading">Loading counselling updates...</div>;
@@ -346,6 +346,7 @@ export default function LoginPage() {
   const [session, setSession] = useState(() => readStoredStudentSession());
   const [student, setStudent] = useState(null);
   const [selectedPanel, setSelectedPanel] = useState(location.state?.panel || 'profile');
+  const [counsellingRefreshKey, setCounsellingRefreshKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDashboard, setIsSavingDashboard] = useState(false);
   const [profileForm, setProfileForm] = useState(initialProfileForm);
@@ -1286,9 +1287,9 @@ export default function LoginPage() {
             </form>
           </section>
           <section className="student-panel" ref={counsellingRef}>
-            <div className="student-panel__header"><h2>Counselling Resolution Center</h2><button type="button" onClick={() => handlePanelSelect('counselling')}>Refresh view</button></div>
+            <div className="student-panel__header"><h2>Counselling Resolution Center</h2><button type="button" onClick={() => setCounsellingRefreshKey((value) => value + 1)}>Refresh details</button></div>
             <p>Track counselling progress, resolved problems, counsellor replies, and notifications from one place.</p>
-            <StudentCounsellingDashboard token={session.token} />
+            <StudentCounsellingDashboard token={session.token} refreshKey={counsellingRefreshKey} />
           </section>
           <section className="student-panel" ref={ordersRef}>
             <div className="student-panel__header"><h2>Your Orders</h2><Link to="/ecommerce">Buy Products</Link></div>

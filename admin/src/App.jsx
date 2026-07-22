@@ -99,7 +99,9 @@ function EducationCenters({ notify }) {
         { method: type === "delete" ? "DELETE" : "PATCH" },
       );
       notify("success", d.message);
-      load();
+      const changed = d.educationCenter;
+      setItems((current) => type === "delete" ? current.filter((item) => item.id !== id) : current.map((item) => item.id === id && changed ? changed : item));
+      setSelected((current) => current?.id === id ? (type === "delete" ? null : changed || current) : current);
     } catch (e) {
       notify("error", e.message);
     }
@@ -153,6 +155,7 @@ function EducationCenters({ notify }) {
                 <strong>{count("Approved")}</strong>
                 <p>Visible to clients</p>
               </article>
+              <article><span>On Hold</span><strong>{count("Held")}</strong><p>Account access paused</p></article>
             </div>
             <div className="admin-toolbar">
               <div>
@@ -173,7 +176,7 @@ function EducationCenters({ notify }) {
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                 >
-                  {["All", "Pending", "Approved", "Rejected"].map((x) => (
+                  {["All", "Pending", "Approved", "Held", "Rejected"].map((x) => (
                     <option key={x}>{x}</option>
                   ))}
                 </select>
@@ -208,10 +211,8 @@ function EducationCenters({ notify }) {
                 date(x.createdAt),
                 <Actions>
                   <button onClick={() => setSelected(x)}>View</button>
-                  <button onClick={() => action(x.id, "approve")}>
-                    Approve
-                  </button>
-                  <button onClick={() => action(x.id, "reject")}>Reject</button>
+                  <label className="admin-status-toggle"><input type="checkbox" checked={x.status === "Approved"} onChange={(event) => action(x.id, event.target.checked ? "approve" : "pending")}/><span>Pending to approval</span></label>
+                  <label className="admin-status-toggle admin-status-toggle--hold"><input type="checkbox" checked={x.status === "Held"} onChange={(event) => action(x.id, event.target.checked ? "hold" : "approve")}/><span>Account hold</span></label>
                   <button
                     className="danger"
                     onClick={() => action(x.id, "delete")}
@@ -271,7 +272,7 @@ function EducationCenters({ notify }) {
                     <strong>{selected.username}</strong>
                   </div>
                 </div>
-                <div className="admin-popup-actions"><button onClick={() => action(selected.id, "approve")}>Approve</button><button onClick={() => action(selected.id, "reject")}>Reject</button></div>
+                <div className="admin-popup-actions"><button onClick={() => action(selected.id, selected.status === "Approved" ? "pending" : "approve")}>{selected.status === "Approved" ? "Move to Pending" : "Approve and publish"}</button><button onClick={() => action(selected.id, selected.status === "Held" ? "approve" : "hold")}>{selected.status === "Held" ? "Release account" : "Hold account"}</button><button className="danger" onClick={() => action(selected.id,"delete")}>Delete</button></div>
               </section>
               </div>
             )}
@@ -802,7 +803,7 @@ function AdminLogin({ onAuthenticated }) {
       setLoading(false);
     }
   };
-  return <main className="admin-auth-page"><form className="admin-auth-card" onSubmit={submit}><img src={logo} alt="What Next Admin"/><h1>Admin authentication</h1><p>Enter the same admin key configured as <code>ADMIN_API_KEY</code> on the server.</p>{error && <Alert variant="danger">{error}</Alert>}<label>Admin key<input type="password" value={key} onChange={(event)=>setKey(event.target.value)} required autoFocus/></label><button disabled={loading}>{loading ? "Checking..." : "Open Admin Dashboard"}</button></form></main>;
+  return <main className="admin-auth-page"><form className="admin-auth-card" onSubmit={submit}><img src={logo} alt="What Next Admin"/><h1>Admin and employee authentication</h1><p>Enter the Admin ID or Employee ID provided by the administrator.</p>{error && <Alert variant="danger">{error}</Alert>}<label>Admin ID / Employee ID<input type="password" value={key} onChange={(event)=>setKey(event.target.value)} required autoFocus autoComplete="current-password"/></label><button disabled={loading}>{loading ? "Checking..." : "Open Admin Dashboard"}</button></form></main>;
 }
 export default function App() {
   const [page, setPage] = useState("centers"),
@@ -813,12 +814,14 @@ export default function App() {
     setTimeout(() => setNotice(null), 3500);
   };
   if (!authenticated) return <AdminLogin onAuthenticated={() => setAuthenticated(true)} />;
+  const signedInAccessId = sessionStorage.getItem("what-next-admin-key") || "Environment admin";
   return (
     <div className="admin-page">
       <header className="admin-header">
         <Container fluid="xl" className="admin-header__inner">
           <img src={logo} className="admin-brand__logo" />
           <nav className="admin-nav">
+            <span className="admin-access-identity"><small>Signed in ID</small><strong>{signedInAccessId}</strong></span>
             <button onClick={() => setPage("centers")}>
               Education Centers
             </button>

@@ -30,7 +30,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT) || 5000;
 const mongoUri = process.env.MONGO_URI;
 // A 100 MB file becomes roughly 133 MB after base64 encoding in JSON.
-const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '140mb';
+// Registration can contain four base64 files of up to 100 MB each. Base64 adds
+// roughly 33%, so the request limit must be higher than the raw file total.
+const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '600mb';
 const uploadDirectory = path.resolve(process.env.UPLOAD_DIR || 'uploads');
 const mongoRetryDelayMs = Number(process.env.MONGO_RETRY_DELAY_MS) || 10_000;
 
@@ -372,7 +374,7 @@ async function connectDatabase() {
   try {
     await configureMongoDns();
     await mongoose.connect(mongoUri, {
-      maxPoolSize: 100,
+      maxPoolSize: 10,
       minPoolSize: 0,
       serverSelectionTimeoutMS: 10000
     });

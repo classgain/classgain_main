@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Alert, Container, Spinner } from 'react-bootstrap';
+import { Alert, Container, Modal, Spinner } from 'react-bootstrap';
 import { createEducationApplication, fetchEducationItemDetails } from '../services/api';
 import { readStudentSession } from '../services/studentSession';
 
@@ -136,6 +136,7 @@ export default function EducationDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [inactiveCourse, setInactiveCourse] = useState(null);
   const [applicationForm, setApplicationForm] = useState(initialApplicationForm);
   const [applicationStatus, setApplicationStatus] = useState({ type: '', message: '' });
   const [isApplying, setIsApplying] = useState(false);
@@ -222,6 +223,10 @@ export default function EducationDetailsPage() {
   const stats = resolvedDetails.stats || {};
 
   const handleApplyClick = (course) => {
+    if (course.status === 'Inactive') {
+      setInactiveCourse(course);
+      return;
+    }
     setSelectedCourse(course);
     setApplicationForm(initialApplicationForm);
     setApplicationStatus({ type: '', message: '' });
@@ -354,7 +359,7 @@ export default function EducationDetailsPage() {
                   <span>Intake: {course.intake || 'Contact'} . Status: {course.status || 'Active'}</span>
                 </div>
                 <button type="button" className="available-course-card__apply" onClick={() => handleApplyClick(course)}>
-                  Apply Now
+                  {course.status === 'Inactive' ? 'Currently Inactive' : 'Apply Now'}
                 </button>
               </article>
             ))}
@@ -428,6 +433,11 @@ export default function EducationDetailsPage() {
             </div>
             </div>
           ) : null}
+          <Modal show={Boolean(inactiveCourse)} onHide={() => setInactiveCourse(null)} centered>
+            <Modal.Header closeButton><Modal.Title>Course currently inactive</Modal.Title></Modal.Header>
+            <Modal.Body><p><strong>{inactiveCourse?.name}</strong></p><p>Currently applications are not available for this course. Please choose another active course or contact the education center.</p></Modal.Body>
+            <Modal.Footer><button type="button" className="btn btn-primary" onClick={() => setInactiveCourse(null)}>View other courses</button></Modal.Footer>
+          </Modal>
         </section>
 
         <section className="profile-section">

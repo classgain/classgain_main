@@ -821,6 +821,8 @@
   background: #cf4d4d !important;
 }
 
+.course-status-switch{display:inline-flex;align-items:center;gap:.55rem;cursor:pointer}.course-status-switch input{position:absolute;opacity:0;pointer-events:none}.course-status-switch__track{width:44px;height:24px;border-radius:999px;background:#687585;position:relative;transition:.2s}.course-status-switch__track:after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}.course-status-switch input:checked+.course-status-switch__track{background:#22a865}.course-status-switch input:checked+.course-status-switch__track:after{transform:translateX(20px)}.course-status-switch b{min-width:58px;color:#dce9f7;font-size:.78rem}.course-status-switch input:disabled+.course-status-switch__track{opacity:.55}
+
 .education-table__details {
   padding: 0.48rem 0.7rem;
   border: 0;

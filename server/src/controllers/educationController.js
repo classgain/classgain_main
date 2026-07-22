@@ -463,6 +463,16 @@ export async function createEducationApplication(req, res, next) {
       });
     }
 
+    const selectedCourse = (profile.courses || []).find(
+      (item) => normalizeText(item.name).toLowerCase() === course.toLowerCase()
+    );
+    if (!selectedCourse) {
+      return res.status(404).json({ success: false, message: 'This course is no longer available at this education center.' });
+    }
+    if (selectedCourse.status === 'Inactive') {
+      return res.status(409).json({ success: false, message: 'Currently applications are not available for this course.' });
+    }
+
     const scholarshipName =
       scholarshipInterest && profile.scholarships?.length
         ? profile.scholarships.find((scholarship) => scholarship.status === 'Active')?.name || profile.scholarships[0].name

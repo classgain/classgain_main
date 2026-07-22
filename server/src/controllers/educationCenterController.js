@@ -11,6 +11,14 @@ import SequenceCounter from '../model/sequenceCounterModel.js';
 import { createPartnerToken } from '../utils/partnerToken.js';
 
 const PENDING_APPROVAL_MESSAGE = 'Your account is pending admin approval.';
+const MAX_REGISTRATION_FILE_BYTES = 100 * 1024 * 1024;
+
+function dataUrlByteSize(value = '') {
+  const commaIndex = value.indexOf(',');
+  if (commaIndex < 0) return 0;
+  const encoded = value.slice(commaIndex + 1).replace(/\s/g, '');
+  return Math.floor((encoded.length * 3) / 4) - (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
+}
 
 const categoryDisplayMap = {
   School: {
@@ -290,6 +298,14 @@ async function removeEducationCenterPublicArtifacts(center) {
   }
 }
 
+async function hideEducationCenterPublicItems(center) {
+  const partner = await EducationPartner.findOne({ officialEmail: center.email }).lean();
+  const profileQuery = partner ? { partnerId: partner._id } : { contactEmail: center.email };
+  const profiles = await EducationCenterUpload.find(profileQuery).select('_id').lean();
+  const publicItemIds = profiles.map((profile) => `db-center-${profile._id}`);
+  if (publicItemIds.length) await EducationItem.deleteMany({ id: { $in: publicItemIds } });
+}
+
 export async function createEducationCenterHelpTicket(req, res, next) {
   try {
     const educationCenterName = cleanText(req.body.educationCenterName);
@@ -371,6 +387,13 @@ export async function registerEducationCenter(req, res, next) {
     const idProof = cleanText(req.body.idProof);
     const addressProof = cleanText(req.body.addressProof);
     const logo = cleanText(req.body.logo);
+
+    const oversizedUpload = [registrationCertificate, idProof, addressProof, logo].find(
+      (value) => value && dataUrlByteSize(value) > MAX_REGISTRATION_FILE_BYTES
+    );
+    if (oversizedUpload) {
+      return res.status(413).json({ success: false, message: 'Each registration upload must be 100 MB or smaller.' });
+    }
 
     if (
       !educationCenterName ||
@@ -601,7 +624,7 @@ export async function rejectEducationCenter(req, res, next) {
       return res.status(404).json({ success: false, message: 'Education center not found.' });
     }
 
-    await removeEducationCenterPublicArtifacts(center);
+    await hideEducationCenterPublicItems(center);
 
     await upsertPendingPartner(center);
 
@@ -613,6 +636,28 @@ export async function rejectEducationCenter(req, res, next) {
   } catch (error) {
     return next(error);
   }
+}
+
+export async function holdEducationCenter(req, res, next) {
+  try {
+    const center = await EducationCenter.findByIdAndUpdate(req.params.id, { status: 'Held' }, { new: true, runValidators: true });
+    if (!center) return res.status(404).json({ success: false, message: 'Education center not found.' });
+    await hideEducationCenterPublicItems(center);
+    await upsertPendingPartner(center);
+    return res.json({ success: true, message: 'Education center account placed on hold.', educationCenter: serializeEducationCenter(center, { includeDocuments: true }) });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function pendEducationCenter(req, res, next) {
+  try {
+    const center = await EducationCenter.findByIdAndUpdate(req.params.id, { status: 'Pending' }, { new: true, runValidators: true });
+    if (!center) return res.status(404).json({ success: false, message: 'Education center not found.' });
+    await hideEducationCenterPublicItems(center);
+    await upsertPendingPartner(center);
+    return res.json({ success: true, message: 'Education center returned to pending approval.', educationCenter: serializeEducationCenter(center, { includeDocuments: true }) });
+  } catch (error) { return next(error); }
 }
 
 export async function deleteEducationCenter(req, res, next) {

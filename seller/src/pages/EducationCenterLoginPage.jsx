@@ -20,6 +20,8 @@ import {
   updateEducationCenterCourse,
   updateEducationCenterScholarship
 } from '../services/api';
+
+const MAX_DASHBOARD_UPLOAD_BYTES = 100 * 1024 * 1024;
 import {
   buildPartnerSession,
   clearPartnerSession,
@@ -621,6 +623,11 @@ export default function EducationCenterLoginPage() {
     if (!file) {
       return;
     }
+    if (file.size > MAX_DASHBOARD_UPLOAD_BYTES) {
+      event.target.value = '';
+      setStatus({ type: 'error', message: 'Image must be 100 MB or smaller.' });
+      return;
+    }
 
     try {
       const image = await readFileAsDataUrl(file);
@@ -635,6 +642,11 @@ export default function EducationCenterLoginPage() {
     const file = event.target.files?.[0];
 
     if (!file) {
+      return;
+    }
+    if (file.size > MAX_DASHBOARD_UPLOAD_BYTES) {
+      event.target.value = '';
+      setStatus({ type: 'error', message: 'Thumbnail must be 100 MB or smaller.' });
       return;
     }
 
@@ -1161,9 +1173,7 @@ export default function EducationCenterLoginPage() {
                       </td>
                       <td>
                         <div className="education-table__actions">
-                          <button type="button" onClick={() => handleCourseStatusToggle(course)}>
-                            {course.status === 'Active' ? 'Inactivate' : 'Activate'}
-                          </button>
+                          <label className="course-status-switch"><input type="checkbox" checked={course.status === 'Active'} onChange={() => handleCourseStatusToggle(course)} disabled={busyAction === 'course-status'}/><span className="course-status-switch__track"/><b>{course.status}</b></label>
                           <button type="button" className="education-table__danger" onClick={() => handleCourseDelete(course.id)}>
                             Delete
                           </button>
