@@ -1,6 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import { Alert, Badge, Container, Spinner } from "react-bootstrap";
 import logo from "./assets/navbarlogo_adminpage.png";
+import {
+  clearAdminKey,
+  getAdminKey,
+  hasAdminKey,
+  setAdminKey,
+} from "./services/adminSession.js";
 
 const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const categories = [
@@ -29,7 +35,7 @@ const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
 
 async function request(path, options = {}, attempt = 0) {
   const headers = new Headers(options.headers || {});
-  const adminKey = sessionStorage.getItem("what-next-admin-key") || import.meta.env.VITE_ADMIN_API_KEY;
+  const adminKey = getAdminKey();
   if (adminKey) headers.set("X-Admin-Key", adminKey);
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(`${API}${path}`, {
@@ -792,12 +798,12 @@ function AdminLogin({ onAuthenticated }) {
     event.preventDefault();
     setLoading(true);
     setError("");
-    sessionStorage.setItem("what-next-admin-key", key.trim());
+    setAdminKey(key);
     try {
       await request("/admin/orders");
       onAuthenticated();
     } catch (requestError) {
-      sessionStorage.removeItem("what-next-admin-key");
+      clearAdminKey();
       setError(requestError.message);
     } finally {
       setLoading(false);
@@ -808,13 +814,13 @@ function AdminLogin({ onAuthenticated }) {
 export default function App() {
   const [page, setPage] = useState("centers"),
     [notice, setNotice] = useState(null),
-    [authenticated, setAuthenticated] = useState(Boolean(sessionStorage.getItem("what-next-admin-key") || import.meta.env.VITE_ADMIN_API_KEY));
+    [authenticated, setAuthenticated] = useState(hasAdminKey);
   const notify = (type, message) => {
     setNotice({ type, message });
     setTimeout(() => setNotice(null), 3500);
   };
   if (!authenticated) return <AdminLogin onAuthenticated={() => setAuthenticated(true)} />;
-  const signedInAccessId = sessionStorage.getItem("what-next-admin-key") || "Environment admin";
+  const signedInAccessId = getAdminKey();
   return (
     <div className="admin-page">
       <header className="admin-header">
@@ -831,7 +837,7 @@ export default function App() {
             </button>
             <button onClick={() => setPage("buying")}>Buying Details</button>
             <button onClick={() => setPage("counselling")}>Student Counselling</button>
-            <button onClick={() => { sessionStorage.removeItem("what-next-admin-key"); setAuthenticated(false); }}>Log Out</button>
+            <button onClick={() => { clearAdminKey(); setAuthenticated(false); }}>Log Out</button>
           </nav>
         </Container>
       </header>
