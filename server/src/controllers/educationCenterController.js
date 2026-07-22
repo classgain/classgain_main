@@ -383,10 +383,11 @@ export async function registerEducationCenter(req, res, next) {
     const username = cleanUsername(req.body.username);
     const password = cleanText(req.body.password);
     const confirmPassword = cleanText(req.body.confirmPassword);
-    const registrationCertificate = cleanText(req.body.registrationCertificate);
-    const idProof = cleanText(req.body.idProof);
-    const addressProof = cleanText(req.body.addressProof);
-    const logo = cleanText(req.body.logo);
+    const uploadedPath = (field) => req.files?.[field]?.[0] ? `/uploads/education-center-registration/${req.files[field][0].filename}` : '';
+    const registrationCertificate = uploadedPath('registrationCertificate') || cleanText(req.body.registrationCertificate);
+    const idProof = uploadedPath('idProof') || cleanText(req.body.idProof);
+    const addressProof = uploadedPath('addressProof') || cleanText(req.body.addressProof);
+    const logo = uploadedPath('logo') || cleanText(req.body.logo);
 
     const oversizedUpload = [registrationCertificate, idProof, addressProof, logo].find(
       (value) => value && dataUrlByteSize(value) > MAX_REGISTRATION_FILE_BYTES

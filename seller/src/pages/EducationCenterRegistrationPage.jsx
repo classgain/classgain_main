@@ -45,6 +45,7 @@ function readFileAsDataUrl(file) {
 export default function EducationCenterRegistrationPage() {
   const [formData, setFormData] = useState(initialRegistrationForm);
   const [uploadNames, setUploadNames] = useState({});
+  const [uploadFiles, setUploadFiles] = useState({});
   const [logoPreview, setLogoPreview] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function EducationCenterRegistrationPage() {
     if (!file) {
       setFormData((current) => ({ ...current, [key]: '' }));
       setUploadNames((current) => ({ ...current, [key]: '' }));
+      setUploadFiles((current) => ({ ...current, [key]: null }));
       return;
     }
 
@@ -76,11 +78,12 @@ export default function EducationCenterRegistrationPage() {
     }
 
     try {
-      const fileData = await readFileAsDataUrl(file);
-      setFormData((current) => ({ ...current, [key]: fileData }));
+      setFormData((current) => ({ ...current, [key]: file.name }));
+      setUploadFiles((current) => ({ ...current, [key]: file }));
       setUploadNames((current) => ({ ...current, [key]: file.name }));
 
       if (key === 'logo') {
+        const fileData = await readFileAsDataUrl(file);
         setLogoPreview(fileData);
       }
     } catch (_error) {
@@ -107,9 +110,10 @@ export default function EducationCenterRegistrationPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await registerEducationCenter(formData);
+      const response = await registerEducationCenter({ ...formData, ...uploadFiles });
       setFormData(initialRegistrationForm);
       setUploadNames({});
+      setUploadFiles({});
       setLogoPreview('');
       setStatus({
         type: 'success',

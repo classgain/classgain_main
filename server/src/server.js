@@ -24,6 +24,8 @@ import supportTicketRoutes from './routes/supportTicketRoutes.js';
 import { ensureAccountCollections } from './utils/accountCollections.js';
 
 dotenv.config();
+// Optional ignored local file for employee/admin access IDs.
+dotenv.config({ path: '.env.admin' });
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';

@@ -8,7 +8,7 @@ function isJsonResponse(response) {
 function buildRequestHeaders(options = {}) {
   const headers = new Headers(options.headers || {});
 
-  if (options.body && !headers.has('Content-Type')) {
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -224,9 +224,13 @@ export function submitEducationCenterHelpTicket(payload) {
 }
 
 export function registerEducationCenter(payload) {
+  const body = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') body.append(key, value);
+  });
   return apiRequest('/education-center/register', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body
   });
 }
 
