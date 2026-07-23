@@ -165,7 +165,7 @@ const corsOptions = {
   origin: corsOrigin,
   credentials: true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400
 };
 

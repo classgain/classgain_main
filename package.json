@@ -16,9 +16,17 @@
     "build:seller": "npm run build --prefix seller",
     "build:admin": "npm run build --prefix admin",
     "build:all": "npm run build:clients && npm run build:seller && npm run build:admin",
+    "lint": "eslint admin/src client/src seller/src server/src scripts",
     "start:server": "npm start --prefix server"
   },
   "dependencies": {
     "mongodb": "^7.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.7.0"
   }
 }

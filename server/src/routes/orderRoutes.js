@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { createOrder, getMyOrder, listAdminOrders, listMyOrders, updateAdminOrder } from '../controllers/orderController.js';
-import { requireAdmin, requireStudent } from '../middleware/counsellingAuth.js';
+import { requireStudent } from '../middleware/counsellingAuth.js';
 const router=Router();
-router.get('/admin/orders',requireAdmin,listAdminOrders);
-router.patch('/admin/orders/:id',requireAdmin,updateAdminOrder);
+router.get('/admin/orders',listAdminOrders);
+router.patch('/admin/orders/:id',updateAdminOrder);
 router.post('/orders',requireStudent,createOrder);
 router.get('/orders/my',requireStudent,listMyOrders);
 router.get('/orders/:id',requireStudent,getMyOrder);

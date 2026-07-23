@@ -1,12 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { Alert, Badge, Container, Spinner } from "react-bootstrap";
 import logo from "./assets/navbarlogo_adminpage.png";
-import {
-  clearAdminKey,
-  getAdminKey,
-  hasAdminKey,
-  setAdminKey,
-} from "./services/adminSession.js";
 
 const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const categories = [
@@ -35,8 +29,6 @@ const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
 
 async function request(path, options = {}, attempt = 0) {
   const headers = new Headers(options.headers || {});
-  const adminKey = getAdminKey();
-  if (adminKey) headers.set("X-Admin-Key", adminKey);
   if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(`${API}${path}`, {
     cache: "no-store",
@@ -790,44 +782,19 @@ function Table({ headers, rows }) {
 function Actions({ children }) {
   return <div className="admin-row-actions">{children}</div>;
 }
-function AdminLogin({ onAuthenticated }) {
-  const [key, setKey] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const submit = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    setAdminKey(key);
-    try {
-      await request("/admin/orders");
-      onAuthenticated();
-    } catch (requestError) {
-      clearAdminKey();
-      setError(requestError.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  return <main className="admin-auth-page"><form className="admin-auth-card" onSubmit={submit}><img src={logo} alt="What Next Admin"/><h1>Admin and employee authentication</h1><p>Enter the Admin ID or Employee ID provided by the administrator.</p>{error && <Alert variant="danger">{error}</Alert>}<label>Admin ID / Employee ID<input type="password" value={key} onChange={(event)=>setKey(event.target.value)} required autoFocus autoComplete="current-password"/></label><button disabled={loading}>{loading ? "Checking..." : "Open Admin Dashboard"}</button></form></main>;
-}
 export default function App() {
   const [page, setPage] = useState("centers"),
-    [notice, setNotice] = useState(null),
-    [authenticated, setAuthenticated] = useState(hasAdminKey);
+    [notice, setNotice] = useState(null);
   const notify = (type, message) => {
     setNotice({ type, message });
     setTimeout(() => setNotice(null), 3500);
   };
-  if (!authenticated) return <AdminLogin onAuthenticated={() => setAuthenticated(true)} />;
-  const signedInAccessId = getAdminKey();
   return (
     <div className="admin-page">
       <header className="admin-header">
         <Container fluid="xl" className="admin-header__inner">
           <img src={logo} className="admin-brand__logo" />
           <nav className="admin-nav">
-            <span className="admin-access-identity"><small>Signed in ID</small><strong>{signedInAccessId}</strong></span>
             <button onClick={() => setPage("centers")}>
               Education Centers
             </button>
@@ -837,7 +804,6 @@ export default function App() {
             </button>
             <button onClick={() => setPage("buying")}>Buying Details</button>
             <button onClick={() => setPage("counselling")}>Student Counselling</button>
-            <button onClick={() => { clearAdminKey(); setAuthenticated(false); }}>Log Out</button>
           </nav>
         </Container>
       </header>
