@@ -222,6 +222,9 @@ export function submitEducationCenterHelpTicket(payload) {
     body: JSON.stringify(payload)
   });
 }
+export function fetchSupportTicketStatus(type, ticketId, email) {
+  return apiRequest(`/support-tickets/status/${encodeURIComponent(type)}/${encodeURIComponent(ticketId)}?email=${encodeURIComponent(email)}`, { method: 'GET' });
+}
 
 export function registerEducationCenter(payload) {
   const body = new FormData();

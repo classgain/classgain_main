@@ -152,6 +152,13 @@ function corsOrigin(origin, callback) {
 
   const normalizedOrigin = origin.replace(/\/$/, '');
 
+  if (
+    !isProduction &&
+    /^https?:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(normalizedOrigin)
+  ) {
+    return callback(null, true);
+  }
+
   if (allowedOrigins.has(normalizedOrigin)) {
     return callback(null, true);
   }

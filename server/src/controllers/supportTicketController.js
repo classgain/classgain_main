@@ -26,6 +26,40 @@ export async function listTickets(req, res, next) {
   } catch (error) { next(error); }
 }
 
+export async function getTicketStatus(req, res, next) {
+  try {
+    const Model = getModel(req.params.type);
+    if (!Model) return res.status(400).json({ success: false, message: 'Invalid ticket type.' });
+
+    const email = String(req.query.email || '').trim().toLowerCase();
+    const ticketId = String(req.params.ticketId || '').trim();
+    if (!email || !ticketId) {
+      return res.status(400).json({ success: false, message: 'Ticket ID and email are required.' });
+    }
+
+    const ticketIdField = req.params.type === 'student' ? 'ticketId' : 'ticket_id';
+    const ticket = await Model.findOne({ [ticketIdField]: ticketId, email })
+      .select(`${ticketIdField} subject status reply createdAt created_at`)
+      .lean();
+    if (!ticket) {
+      return res.status(404).json({ success: false, message: 'No support ticket matches this Ticket ID and email.' });
+    }
+
+    return res.json({
+      success: true,
+      ticket: {
+        ticketId: ticket[ticketIdField],
+        subject: ticket.subject,
+        status: ticket.status,
+        reply: ticket.reply || '',
+        createdAt: ticket.createdAt || ticket.created_at
+      }
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export async function updateTicket(req, res, next) {
   try {
     const Model = getModel(req.params.type);

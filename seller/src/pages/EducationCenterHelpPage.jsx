@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { submitEducationCenterHelpTicket } from '../services/api';
+import { fetchSupportTicketStatus, submitEducationCenterHelpTicket } from '../services/api';
 import './Loginpage-Design.css';
 
 const categoryOptions = ['School', 'College', 'Coaching Center'];
@@ -41,6 +41,8 @@ export default function EducationCenterHelpPage() {
   const [attachmentName, setAttachmentName] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lookup, setLookup] = useState({ ticketId: '', email: '' });
+  const [ticketStatus, setTicketStatus] = useState(null);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -83,6 +85,8 @@ export default function EducationCenterHelpPage() {
     try {
       setIsSubmitting(true);
       const response = await submitEducationCenterHelpTicket(formData);
+      setLookup({ ticketId: response.ticketId || '', email: formData.email });
+      setTicketStatus({ ticketId: response.ticketId, status: 'Open', reply: '' });
       setFormData(initialHelpForm);
       setAttachmentName('');
       setStatus({
@@ -93,6 +97,18 @@ export default function EducationCenterHelpPage() {
       setStatus({ type: 'error', message: error.message || 'Unable to submit your help request right now.' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTicketLookup = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetchSupportTicketStatus('education-center', lookup.ticketId, lookup.email);
+      setTicketStatus(response.ticket);
+      setStatus({ type: '', message: '' });
+    } catch (error) {
+      setTicketStatus(null);
+      setStatus({ type: 'error', message: error.message });
     }
   };
 
@@ -224,6 +240,19 @@ export default function EducationCenterHelpPage() {
               {isSubmitting ? 'Submitting...' : 'Submit Help Ticket'}
             </button>
           </div>
+        </form>
+      </section>
+
+      <section className="portal-form-card portal-form-card--wide">
+        <form className="portal-form" onSubmit={handleTicketLookup}>
+          <p className="portal-form__eyebrow">Track Support Reply</p>
+          <h2>Check your help ticket</h2>
+          <div className="portal-form__split">
+            <label className="portal-form__field"><span>Ticket ID</span><input value={lookup.ticketId} onChange={(event) => setLookup((current) => ({ ...current, ticketId: event.target.value }))} required /></label>
+            <label className="portal-form__field"><span>Email used in ticket</span><input type="email" value={lookup.email} onChange={(event) => setLookup((current) => ({ ...current, email: event.target.value }))} required /></label>
+          </div>
+          <div className="portal-form__actions"><button type="submit" className="login-submit">Check Reply</button></div>
+          {ticketStatus && <div className="dashboard-page__status dashboard-page__status--success"><strong>{ticketStatus.ticketId} · {ticketStatus.status}</strong><p>{ticketStatus.reply || 'The support team has not replied yet.'}</p></div>}
         </form>
       </section>
     </div>

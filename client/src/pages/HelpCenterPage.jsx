@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { submitStudentSupportTicket } from '../services/api';
+import { fetchSupportTicketStatus, submitStudentSupportTicket } from '../services/api';
 
 const contactItems = [
   {
@@ -27,6 +27,8 @@ export default function HelpCenterPage() {
     question: ''
   });
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [lookup, setLookup] = useState({ ticketId: '', email: '' });
+  const [ticketStatus, setTicketStatus] = useState(null);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -38,9 +40,23 @@ export default function HelpCenterPage() {
     event.preventDefault();
     try {
       const response = await submitStudentSupportTicket({ studentName: formData.name, email: formData.email, subject: formData.subject, message: formData.question });
+      setLookup({ ticketId: response.ticket?.ticketId || '', email: formData.email });
+      setTicketStatus(response.ticket || null);
       setFormData({ name: '', email: '', subject: '', question: '' });
       setStatus({ type: 'success', message: response.message });
     } catch (error) { setStatus({ type: 'error', message: error.message }); }
+  }
+
+  async function handleTicketLookup(event) {
+    event.preventDefault();
+    try {
+      const response = await fetchSupportTicketStatus('student', lookup.ticketId, lookup.email);
+      setTicketStatus(response.ticket);
+      setStatus({ type: '', message: '' });
+    } catch (error) {
+      setTicketStatus(null);
+      setStatus({ type: 'error', message: error.message });
+    }
   }
 
   return (
@@ -103,6 +119,17 @@ export default function HelpCenterPage() {
               </form>
 
               {status.message && <div className={status.type === 'success' ? 'help-center-success' : 'alert alert-danger mt-3'}>{status.message}</div>}
+            </div>
+
+            <div className="help-center-form-card help-center-form-card--full">
+              <span className="help-center-panel__eyebrow">Track Support Reply</span>
+              <h2>Check your support ticket</h2>
+              <form className="help-center-form" onSubmit={handleTicketLookup}>
+                <input value={lookup.ticketId} onChange={(event) => setLookup((current) => ({ ...current, ticketId: event.target.value }))} placeholder="Ticket ID" required />
+                <input type="email" value={lookup.email} onChange={(event) => setLookup((current) => ({ ...current, email: event.target.value }))} placeholder="Email used in the ticket" required />
+                <button type="submit" className="help-center-form__button">Check Reply</button>
+              </form>
+              {ticketStatus && <div className="help-center-success"><strong>{ticketStatus.ticketId} · {ticketStatus.status}</strong><p>{ticketStatus.reply || 'The support team has not replied yet.'}</p></div>}
             </div>
 
            

@@ -344,6 +344,9 @@ export function deleteEducationCenterVideo(videoId, token) {
 export function submitStudentSupportTicket(payload) {
   return apiRequest('/support-tickets/student', { method: 'POST', body: JSON.stringify(payload) });
 }
+export function fetchSupportTicketStatus(type, ticketId, email) {
+  return apiRequest(`/support-tickets/status/${encodeURIComponent(type)}/${encodeURIComponent(ticketId)}?email=${encodeURIComponent(email)}`, { method: 'GET' });
+}
 
 export function createCounsellingRequest(formData, token) {
   return apiRequest('/counselling', { method: 'POST', headers: buildStudentHeaders(token), body: formData });
