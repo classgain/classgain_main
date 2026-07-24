@@ -26,24 +26,30 @@ const emptyProduct = {
   images: [],
 };
 const RETRYABLE_BACKEND_STATUSES = new Set([502, 503, 504]);
+const JSON_BODY_METHODS = new Set(["POST", "PUT", "PATCH"]);
 
 async function request(path, options = {}, attempt = 0) {
-  const headers = new Headers(options.headers || {});
-  if (options.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const requestOptions = { ...options };
+  const method = (requestOptions.method || "GET").toUpperCase();
+  const headers = new Headers(requestOptions.headers || {});
+  if (JSON_BODY_METHODS.has(method) && requestOptions.body == null) {
+    requestOptions.body = JSON.stringify({});
+  }
+  if (requestOptions.body && !(requestOptions.body instanceof FormData) && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const response = await fetch(`${API}${path}`, {
     cache: "no-store",
     credentials: "include",
-    ...options,
+    ...requestOptions,
     headers,
   });
 
   if (
     RETRYABLE_BACKEND_STATUSES.has(response.status) &&
     attempt < 2 &&
-    (!options.method || options.method === "GET")
+    method === "GET"
   ) {
     await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
-    return request(path, options, attempt + 1);
+    return request(path, requestOptions, attempt + 1);
   }
 
   const data = await response.json().catch(() => ({}));
@@ -60,13 +66,25 @@ async function request(path, options = {}, attempt = 0) {
 }
 
 function StudentCounselling({ notify }) {
-  const [items,setItems] = useState([]), [counts,setCounts] = useState({}), [loading,setLoading] = useState(true), [search,setSearch] = useState(""), [status,setStatus] = useState(""), [priority,setPriority] = useState(""), [selected,setSelected] = useState(null), [reply,setReply] = useState(""), [notes,setNotes] = useState("");
+  const [items,setItems] = useState([]), [counts,setCounts] = useState({}), [loading,setLoading] = useState(true), [search,setSearch] = useState(""), [status,setStatus] = useState(""), [priority,setPriority] = useState(""), [selected,setSelected] = useState(null), [reply,setReply] = useState(""), [notes,setNotes] = useState(""), [submitting,setSubmitting] = useState(false);
   const load = () => { setLoading(true); const query = new URLSearchParams({ ...(search && {search}), ...(status && {status}), ...(priority && {priority}), limit:"50" }); return request(`/admin/counselling?${query}`).then((d) => { setItems(d.items || []); setCounts(d.counts || {}); }).catch((e) => notify("error",e.message)).finally(() => setLoading(false)); };
   useEffect(() => { const timer = setTimeout(load,250); return () => clearTimeout(timer); }, [search,status,priority]);
-  const update = async (item, values) => { try { const data = await request(`/admin/counselling/${item._id}`, {method:"PUT",body:JSON.stringify(values)}); notify("success",data.message); setSelected(data.item); load(); } catch(e) { notify("error",e.message); } };
+  const update = async (item, values) => { try { const data = await request(`/admin/counselling/${item._id}`, {method:"PUT",body:JSON.stringify(values)}); notify("success",data.message); setSelected((current) => current?._id === item._id ? data.item : current); load(); return true; } catch(e) { notify("error",e.message); return false; } };
   const remove = async (item) => { if (!confirm(`Delete counselling request from ${item.name}?`)) return; try { const data = await request(`/admin/counselling/${item._id}`,{method:"DELETE"}); notify("success",data.message); setSelected(null); load(); } catch(e) { notify("error",e.message); } };
   const open = (item) => { setSelected(item); setReply(item.adminReply || ""); setNotes(item.adminNotes || ""); };
-  return <AdminSection title="Student Counselling" subtitle="Review, reply to, and track every student counselling request."><div className="admin-metrics">{["Total","Pending","In Progress","Resolved","Closed"].map((label) => <article key={label}><span>{label}</span><strong>{label === "Total" ? Object.values(counts).reduce((a,b) => a+b,0) : counts[label] || 0}</strong><p>Counselling requests</p></article>)}</div><div className="admin-toolbar counselling-filters"><input placeholder="Search student, ID, department or category" value={search} onChange={(e)=>setSearch(e.target.value)}/><select value={status} onChange={(e)=>setStatus(e.target.value)}><option value="">All statuses</option>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select><select value={priority} onChange={(e)=>setPriority(e.target.value)}><option value="">All priorities</option>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select></div>{loading ? <Spinner animation="border"/> : <Table headers={["Student","Student ID","Department","Subject","Category","Status","Priority","Date","Actions"]} rows={items.map((item)=>[item.name,item.studentId,item.department,item.subject,item.category,<select value={item.status} onChange={(e)=>update(item,{status:e.target.value})}>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select>,<select value={item.priority} onChange={(e)=>update(item,{priority:e.target.value})}>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select>,date(item.createdAt),<Actions><button onClick={()=>open(item)}>View / Reply</button><button onClick={()=>remove(item)}>Delete</button></Actions>])}/>} {selected && <div className="admin-detail-panel counselling-detail"><div className="admin-detail-panel__header"><div><h2>{selected.subject}</h2><p>{selected.name} · {selected.studentId} · {selected.email} · {selected.phone}</p></div><button onClick={()=>setSelected(null)}>Close</button></div><div className="admin-detail-grid"><article><p><b>Department:</b> {selected.department}</p><p><b>Semester:</b> {selected.semester}</p><p><b>Category:</b> {selected.category}</p><h3>Complete problem</h3><p>{selected.description}</p>{selected.image && <img className="admin-counselling-image" src={`${API.replace(/\/api$/,"")}${selected.image}`} onClick={()=>window.open(`${API.replace(/\/api$/,"")}${selected.image}`,"_blank")}/>}</article><article><label>Admin reply<textarea rows="5" value={reply} onChange={(e)=>setReply(e.target.value)}/></label><label>Private admin notes<textarea rows="4" value={notes} onChange={(e)=>setNotes(e.target.value)}/></label><button onClick={()=>update(selected,{adminReply:reply,adminNotes:notes})}>Save reply and notes</button><button onClick={()=>remove(selected)}>Delete request</button></article></div></div>}</AdminSection>;
+  const submitResponse = async (event) => {
+    event.preventDefault();
+    if (!reply.trim()) {
+      notify("error", "Enter an admin response before submitting.");
+      return;
+    }
+    setSubmitting(true);
+    const saved = await update(selected, { adminReply: reply.trim(), adminNotes: notes.trim() });
+    setSubmitting(false);
+    if (saved) setSelected(null);
+  };
+  const imageUrl = selected?.image ? `${API.replace(/\/api$/, "")}${selected.image}` : "";
+  return <AdminSection title="Student Counselling" subtitle="Review, reply to, and track every student counselling request."><div className="admin-metrics">{["Total","Pending","In Progress","Resolved","Closed"].map((label) => <article key={label}><span>{label}</span><strong>{label === "Total" ? Object.values(counts).reduce((a,b) => a+b,0) : counts[label] || 0}</strong><p>Counselling requests</p></article>)}</div><div className="admin-toolbar counselling-filters"><input placeholder="Search student, ID, department or category" value={search} onChange={(e)=>setSearch(e.target.value)}/><select value={status} onChange={(e)=>setStatus(e.target.value)}><option value="">All statuses</option>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select><select value={priority} onChange={(e)=>setPriority(e.target.value)}><option value="">All priorities</option>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select></div>{loading ? <Spinner animation="border"/> : <Table headers={["Student","Student ID","Department","Subject","Category","Status","Priority","Date","Actions"]} rows={items.map((item)=>[item.name,item.studentId,item.department,item.subject,item.category,<select value={item.status} onChange={(e)=>update(item,{status:e.target.value})}>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select>,<select value={item.priority} onChange={(e)=>update(item,{priority:e.target.value})}>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select>,date(item.createdAt),<Actions><button onClick={()=>open(item)}>View / Reply</button><button onClick={()=>remove(item)}>Delete</button></Actions>])}/>} {selected && <div className="admin-modal-backdrop" onMouseDown={()=>setSelected(null)}><section className="admin-detail-panel admin-detail-modal counselling-modal" onMouseDown={(event)=>event.stopPropagation()}><div className="admin-detail-panel__header"><div><span>Student counselling request</span><h2>{selected.subject}</h2></div><button type="button" onClick={()=>setSelected(null)}>Close</button></div><div className="admin-detail-grid counselling-details-grid"><div><span>Student</span><strong>{selected.name}</strong></div><div><span>Student ID</span><strong>{selected.studentId}</strong></div><div><span>Contact</span><strong>{selected.email}<br/>{selected.phone}</strong></div><div><span>Department</span><strong>{selected.department}</strong></div><div><span>Semester</span><strong>{selected.semester}</strong></div><div><span>Category</span><strong>{selected.category}</strong></div><div><span>Status</span><strong>{selected.status}</strong></div><div><span>Priority</span><strong>{selected.priority}</strong></div><div><span>Submitted</span><strong>{date(selected.createdAt)}</strong></div></div><div className="counselling-modal__content"><article><h3>Complete problem details</h3><p className="counselling-description">{selected.description}</p>{imageUrl ? <><h3>Uploaded image</h3><button type="button" className="counselling-image-button" onClick={()=>window.open(imageUrl,"_blank","noopener,noreferrer")}><img className="admin-counselling-image" src={imageUrl} alt={`Uploaded evidence for ${selected.subject}`}/><span>Click image to open full size</span></button></> : <p className="admin-empty-state">No image was uploaded.</p>}</article><form className="counselling-response-form" onSubmit={submitResponse}><h3>Admin response</h3><label>Response to student<textarea rows="6" required value={reply} onChange={(e)=>setReply(e.target.value)} placeholder="Write the response the student will receive..."/></label><label>Private admin notes<textarea rows="4" value={notes} onChange={(e)=>setNotes(e.target.value)} placeholder="Optional notes visible only to admins"/></label><div className="admin-popup-actions"><button type="submit" disabled={submitting}>{submitting ? "Sending..." : "Send response"}</button><button type="button" className="danger" disabled={submitting} onClick={()=>remove(selected)}>Delete request</button></div></form></div></section></div>}</AdminSection>;
 }
 const date = (value) =>
   value

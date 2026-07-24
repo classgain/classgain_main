@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert, Container, Modal, Spinner } from 'react-bootstrap';
 import { createEducationApplication, fetchEducationItemDetails } from '../services/api';
+import { resolveMediaUrl } from '../services/mediaUrl';
 import { readStudentSession } from '../services/studentSession';
 
 const categoryMap = {
@@ -217,8 +218,11 @@ export default function EducationDetailsPage() {
     );
   }
 
-  const heroImage = item.image || item.thumbnail || item.profileImage || resolvedDetails.activity?.[0]?.image || '';
-  const activityItems = resolvedDetails.activity.slice(0, 6);
+  const heroImage = resolveMediaUrl(item.image || item.thumbnail || item.profileImage || resolvedDetails.activity?.[0]?.image);
+  const activityItems = resolvedDetails.activity.slice(0, 6).map((activity) => ({
+    ...activity,
+    image: resolveMediaUrl(activity.image)
+  }));
   const scholarshipItems = resolvedDetails.scholarships.slice(0, 4);
   const stats = resolvedDetails.stats || {};
 

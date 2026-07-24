@@ -76,7 +76,10 @@ export async function updateAdminCounselling(req, res, next) {
     allowedUpdates.forEach((key) => { if (req.body[key] !== undefined && req.body[key] !== item[key]) { item[key] = req.body[key]; changed.push(key); } });
     await item.save();
     if (changed.length) await Notification.create({ studentId: item.studentObjectId, title: changed.includes('adminReply') ? 'Counselling reply received' : 'Counselling request updated', message: changed.includes('status') ? `Your counselling request status is now ${item.status}.` : 'Your counselling request has a new update.', link: `/student/my-counselling?id=${item._id}` });
-    return res.json({ success: true, message: 'Counselling request updated.', item });
+    const message = changed.includes('adminReply')
+      ? 'Admin response sent successfully.'
+      : 'Counselling request updated successfully.';
+    return res.json({ success: true, message, item });
   } catch (error) { return next(error); }
 }
 

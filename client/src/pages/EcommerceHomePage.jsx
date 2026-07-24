@@ -1,19 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Container, Modal, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { API, fetchProducts, fetchProductsByCategory } from '../services/api';
+import { fetchProducts, fetchProductsByCategory } from '../services/api';
+import { resolveMediaUrls } from '../services/mediaUrl';
 
 const categories = ['Writing Things', 'Books & Notes', 'Electronics', 'Toys', 'Story Books', 'School Bags'];
-const apiOrigin = API.replace(/\/api$/, '');
-
-function resolveImage(path) {
-  if (!path) return '';
-  return /^https?:\/\//i.test(path) || path.startsWith('data:') ? path : `${apiOrigin}${path}`;
-}
-
 function productImages(product) {
   const images = Array.isArray(product?.images) ? product.images : [];
-  return [...new Set([...images, product?.image].filter(Boolean))].map(resolveImage);
+  return resolveMediaUrls([...images, product?.image]);
 }
 
 function ProductImage({ src, alt, className = '' }) {

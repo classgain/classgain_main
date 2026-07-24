@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import { resolveMediaUrl } from '../services/mediaUrl';
 
 export default function CategoryCard({ item, compact = false, to }) {
-  const image = item.image || item.thumbnail || item.profileImage || '';
+  const image = resolveMediaUrl(item.image || item.thumbnail || item.profileImage);
   const addressQuery = encodeURIComponent(item.address || item.title || 'education center');
   const locationUrl = `https://www.google.com/maps/search/?api=1&query=${addressQuery}`;
   const courseLine =
