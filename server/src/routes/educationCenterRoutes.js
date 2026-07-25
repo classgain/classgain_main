@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import fs from 'node:fs';
-import path from 'node:path';
 import multer from 'multer';
 import {
   createEducationCenterHelpTicket,
@@ -8,9 +7,10 @@ import {
   loginEducationCenter,
   registerEducationCenter
 } from '../controllers/educationCenterController.js';
+import { resolveUploadDirectory } from '../utils/uploadDirectory.js';
 
 const router = Router();
-const registrationDirectory = path.resolve(process.env.UPLOAD_DIR || 'uploads', 'education-center-registration');
+const registrationDirectory = resolveUploadDirectory('education-center-registration');
 fs.mkdirSync(registrationDirectory, { recursive: true });
 const registrationUpload = multer({
   storage: multer.diskStorage({

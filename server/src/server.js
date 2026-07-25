@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import dns from 'node:dns';
 
 import compression from 'compression';
@@ -22,6 +21,8 @@ import counsellingRoutes from './routes/counsellingRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import supportTicketRoutes from './routes/supportTicketRoutes.js';
 import { ensureAccountCollections } from './utils/accountCollections.js';
+import { streamStoredFile } from './utils/mediaStorage.js';
+import { resolveUploadDirectory } from './utils/uploadDirectory.js';
 
 dotenv.config();
 // Optional ignored local file for employee/admin access IDs.
@@ -35,7 +36,7 @@ const mongoUri = process.env.MONGO_URI;
 // Registration can contain four base64 files of up to 100 MB each. Base64 adds
 // roughly 33%, so the request limit must be higher than the raw file total.
 const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '600mb';
-const uploadDirectory = path.resolve(process.env.UPLOAD_DIR || 'uploads');
+const uploadDirectory = resolveUploadDirectory();
 const mongoRetryDelayMs = Number(process.env.MONGO_RETRY_DELAY_MS) || 10_000;
 
 async function configureMongoDns() {
@@ -313,6 +314,7 @@ app.use('/api', (_req, res, next) => {
 });
 
 app.use('/api', apiRateLimiter);
+app.get('/api/media/:fileId', streamStoredFile);
 app.use(
   [
     '/api/partners/login',

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { resolveMediaUrl } from '../services/mediaUrl';
 
 export default function CategoryCard({ item, compact = false, to }) {
   const image = resolveMediaUrl(item.image || item.thumbnail || item.profileImage);
+  const [imageFailed, setImageFailed] = useState(false);
   const addressQuery = encodeURIComponent(item.address || item.title || 'education center');
   const locationUrl = `https://www.google.com/maps/search/?api=1&query=${addressQuery}`;
   const courseLine =
@@ -19,8 +21,8 @@ export default function CategoryCard({ item, compact = false, to }) {
     <article className={`education-card h-100 ${compact ? 'education-card--compact' : ''}`}>
       <Link to={to} className="education-card__main-link text-decoration-none" aria-label={`Open ${item.title} details`}>
         <div className="education-card__media-wrap">
-          {image ? (
-            <img src={image} alt={item.title} className="education-card__image" loading="lazy" />
+          {image && !imageFailed ? (
+            <img src={image} alt={item.title} className="education-card__image" loading="lazy" onError={() => setImageFailed(true)} />
           ) : (
             <div className="education-card__image education-card__image--empty">{item.title?.slice(0, 2) || 'WN'}</div>
           )}

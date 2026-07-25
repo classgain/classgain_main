@@ -1,11 +1,11 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
 import { createCounselling, deleteAdminCounselling, deleteStudentCounselling, getAdminCounselling, getStudentCounselling, listAdminCounselling, listNotifications, listStudentCounselling, readNotification, updateAdminCounselling, updateStudentCounselling } from '../controllers/counsellingController.js';
 import { requireStudent } from '../middleware/counsellingAuth.js';
+import { resolveUploadDirectory } from '../utils/uploadDirectory.js';
 
-const directory = path.resolve(process.env.UPLOAD_DIR || 'uploads', 'counselling');
+const directory = resolveUploadDirectory('counselling');
 fs.mkdirSync(directory, { recursive: true });
 const upload = multer({ storage: multer.diskStorage({ destination: directory, filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '-')}`) }), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => { const ok = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype); cb(ok ? null : new Error('Only JPG, PNG, and WebP images are allowed.'), ok); } });
 const router = Router();

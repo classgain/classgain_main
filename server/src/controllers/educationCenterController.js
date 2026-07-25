@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import fs from 'node:fs';
 import EducationCenter, {
   educationCenterCategoryValues,
   educationCenterStatusValues
@@ -8,6 +9,7 @@ import EducationCenterUpload from '../model/educationCenterUploadModel.js';
 import EducationItem from '../model/educationItemModel.js';
 import EducationPartner from '../model/educationPartnerModel.js';
 import SequenceCounter from '../model/sequenceCounterModel.js';
+import { deleteStoredFile, storeUploadedFile } from '../utils/mediaStorage.js';
 import { createPartnerToken } from '../utils/partnerToken.js';
 
 const PENDING_APPROVAL_MESSAGE = 'Your account is pending admin approval.';
@@ -369,6 +371,10 @@ export async function createEducationCenterHelpTicket(req, res, next) {
 }
 
 export async function registerEducationCenter(req, res, next) {
+  const temporaryFiles = Object.values(req.files || {}).flat();
+  const storedFiles = [];
+  let centerCreated = false;
+
   try {
     const educationCenterName = cleanText(req.body.educationCenterName);
     const ownerName = cleanText(req.body.ownerName);
@@ -383,11 +389,10 @@ export async function registerEducationCenter(req, res, next) {
     const username = cleanUsername(req.body.username);
     const password = cleanText(req.body.password);
     const confirmPassword = cleanText(req.body.confirmPassword);
-    const uploadedPath = (field) => req.files?.[field]?.[0] ? `/uploads/education-center-registration/${req.files[field][0].filename}` : '';
-    const registrationCertificate = uploadedPath('registrationCertificate') || cleanText(req.body.registrationCertificate);
-    const idProof = uploadedPath('idProof') || cleanText(req.body.idProof);
-    const addressProof = uploadedPath('addressProof') || cleanText(req.body.addressProof);
-    const logo = uploadedPath('logo') || cleanText(req.body.logo);
+    let registrationCertificate = cleanText(req.body.registrationCertificate);
+    let idProof = cleanText(req.body.idProof);
+    let addressProof = cleanText(req.body.addressProof);
+    let logo = cleanText(req.body.logo);
 
     const oversizedUpload = [registrationCertificate, idProof, addressProof, logo].find(
       (value) => value && dataUrlByteSize(value) > MAX_REGISTRATION_FILE_BYTES
@@ -409,9 +414,9 @@ export async function registerEducationCenter(req, res, next) {
       !username ||
       !password ||
       !confirmPassword ||
-      !registrationCertificate ||
-      !idProof ||
-      !addressProof
+      (!registrationCertificate && !req.files?.registrationCertificate?.[0]) ||
+      (!idProof && !req.files?.idProof?.[0]) ||
+      (!addressProof && !req.files?.addressProof?.[0])
     ) {
       return res.status(400).json({ success: false, message: 'Please complete all required registration fields.' });
     }
@@ -443,6 +448,19 @@ export async function registerEducationCenter(req, res, next) {
       });
     }
 
+    const persistUpload = async (field, fallback = '') => {
+      const file = req.files?.[field]?.[0];
+      if (!file) return fallback;
+      const mediaUrl = await storeUploadedFile(file);
+      storedFiles.push(mediaUrl);
+      return mediaUrl;
+    };
+
+    registrationCertificate = await persistUpload('registrationCertificate', registrationCertificate);
+    idProof = await persistUpload('idProof', idProof);
+    addressProof = await persistUpload('addressProof', addressProof);
+    logo = await persistUpload('logo', logo);
+
     const passwordHash = await bcrypt.hash(password, 10);
     const center = await EducationCenter.create({
       education_center_name: educationCenterName,
@@ -463,6 +481,7 @@ export async function registerEducationCenter(req, res, next) {
       logo,
       status: 'Pending'
     });
+    centerCreated = true;
 
     await upsertPendingPartner(center);
 
@@ -472,6 +491,9 @@ export async function registerEducationCenter(req, res, next) {
       educationCenter: serializeEducationCenter(center)
     });
   } catch (error) {
+    if (!centerCreated) {
+      await Promise.all(storedFiles.map(deleteStoredFile));
+    }
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -480,6 +502,8 @@ export async function registerEducationCenter(req, res, next) {
     }
 
     return next(error);
+  } finally {
+    await Promise.all(temporaryFiles.map((file) => fs.promises.unlink(file.path).catch(() => undefined)));
   }
 }
 
