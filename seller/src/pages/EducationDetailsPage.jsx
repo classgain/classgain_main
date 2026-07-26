@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Alert, Container, Spinner } from 'react-bootstrap';
 import { createEducationApplication, fetchEducationItemDetails } from '../services/api';
+import SafeImage from '../components/SafeImage';
+import { resolveMediaUrl } from '../services/mediaUrl';
 
 const categoryMap = {
   startingeducation: { key: 'primary', title: 'Starting Education', path: '/startingeducation' },
@@ -199,8 +201,11 @@ export default function EducationDetailsPage() {
     );
   }
 
-  const heroImage = item.image || item.thumbnail || item.profileImage || resolvedDetails.activity?.[0]?.image || '';
-  const activityItems = resolvedDetails.activity.slice(0, 6);
+  const heroImage = resolveMediaUrl(item.image || item.thumbnail || item.profileImage || resolvedDetails.activity?.[0]?.image);
+  const activityItems = resolvedDetails.activity.slice(0, 6).map((activity) => ({
+    ...activity,
+    image: resolveMediaUrl(activity.image)
+  }));
   const scholarshipItems = resolvedDetails.scholarships.slice(0, 4);
   const stats = resolvedDetails.stats || {};
 
@@ -266,7 +271,8 @@ export default function EducationDetailsPage() {
 
   return (
     <section className="education-profile-page">
-      <div className="education-profile-hero" style={heroImage ? { backgroundImage: `url("${heroImage}")` } : undefined}>
+      <div className="education-profile-hero">
+        <SafeImage className="education-profile-hero__image" src={heroImage} alt="" aria-hidden="true" />
         <Link to={category.path} className="education-profile-hero__arrow education-profile-hero__arrow--left" aria-label={`Back to ${category.title}`}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />
@@ -388,7 +394,7 @@ export default function EducationDetailsPage() {
             {activityItems.map((activity) => (
               <article key={activity.id || activity.title} className="center-activity-card">
                 {activity.image ? (
-                  <img src={activity.image} alt={activity.title} loading="lazy" />
+                  <SafeImage src={activity.image} alt={activity.title} loading="lazy" />
                 ) : (
                   <div className="center-activity-card__empty">{getInitials(activity.title)}</div>
                 )}

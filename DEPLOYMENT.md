@@ -102,8 +102,13 @@ Create three separate Vercel projects from the same repository.
 For each project, add this Production environment variable and redeploy:
 
 ```dotenv
-VITE_API_URL=https://your-render-service.onrender.com/api
+VITE_API_URL=/api
 ```
+
+Each Vercel project proxies `/api` and `/uploads` to Render. Keeping `VITE_API_URL`
+set to `/api` makes browser requests same-origin and prevents deployment-hostname CORS
+failures. Remove any older Vercel environment value that points `VITE_API_URL`
+directly at `onrender.com`.
 
 The Seller project also needs `VITE_CLIENT_URL=https://your-client.vercel.app`. The Admin project needs `VITE_CLIENT_URL=https://your-client.vercel.app`, `VITE_SELLER_URL=https://your-seller.vercel.app`, and (for the currently implemented counselling administration endpoints) `VITE_ADMIN_API_KEY` with the same value as Render's `ADMIN_API_KEY`.
 
@@ -121,7 +126,10 @@ After Vercel assigns the three production domains:
 2. Redeploy or restart the Render service.
 3. Open each frontend and confirm API requests succeed.
 
-Vercel preview deployments use different domains. Add the exact preview origins to the appropriate comma-separated Render variable only when those previews need API access. The production API intentionally does not allow arbitrary `*.vercel.app` origins.
+Vercel preview deployments use different domains. Requests through the repository's
+same-origin `/api` rewrite work without adding every preview hostname. If a frontend
+calls Render directly instead, add that exact HTTPS origin to `FRONTEND_URLS`; the API
+intentionally does not allow arbitrary `*.vercel.app` origins.
 
 ## Production checks
 
@@ -137,6 +145,12 @@ Vercel preview deployments use different domains. Add the exact preview origins 
 ## Upload storage note
 
 The API serves files from `/uploads` with production caching and safe static-file headers. Render's ordinary filesystem is ephemeral, so files written there can disappear on a redeploy or restart. The current application primarily stores uploaded image data and external video URLs in MongoDB. If disk-based uploads are added later, use a persistent Render disk or object storage such as Cloudinary or S3 and store only the resulting URL in MongoDB.
+
+New education-center registration and counselling uploads are stored in MongoDB GridFS
+and served through `/api/media/:fileId`, so they survive Render restarts. Product images
+are stored as MongoDB data URLs. JPG, JPEG, PNG, GIF, WebP, and AVIF are accepted; the
+frontends normalize relative media paths and display a built-in placeholder when a
+legacy file or external image URL is unavailable.
 
 ## Security included
 

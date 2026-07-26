@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import SafeImage from './SafeImage';
+import { resolveMediaUrl } from '../services/mediaUrl';
 
 export default function CategoryCard({ item, compact = false, to }) {
-  const image = item.image || item.thumbnail || item.profileImage || '';
+  const image = resolveMediaUrl(item.image || item.thumbnail || item.profileImage);
   const addressQuery = encodeURIComponent(item.address || item.title || 'education center');
   const locationUrl = `https://www.google.com/maps/search/?api=1&query=${addressQuery}`;
   const courseLine =
@@ -19,7 +21,7 @@ export default function CategoryCard({ item, compact = false, to }) {
       <Link to={to} className="education-card__main-link text-decoration-none" aria-label={`Open ${item.title} details`}>
         <div className="education-card__media-wrap">
           {image ? (
-            <img src={image} alt={item.title} className="education-card__image" loading="lazy" />
+            <SafeImage src={image} alt={item.title} className="education-card__image" loading="lazy" />
           ) : (
             <div className="education-card__image education-card__image--empty">{item.title?.slice(0, 2) || 'WN'}</div>
           )}

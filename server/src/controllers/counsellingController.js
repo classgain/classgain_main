@@ -1,19 +1,26 @@
 import Counselling from '../model/counsellingModel.js';
 import Notification from '../model/notificationModel.js';
+import { deleteStoredFile, storeUploadedFile } from '../utils/mediaStorage.js';
 
 const allowedUpdates = ['status', 'priority', 'adminReply', 'adminNotes'];
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export async function createCounselling(req, res, next) {
+  let storedImage = '';
+
   try {
     const required = ['studentId', 'name', 'email', 'phone', 'department', 'semester', 'category', 'subject', 'description'];
     const missing = required.find((key) => !String(req.body[key] || '').trim());
     if (missing) return res.status(400).json({ success: false, message: `${missing} is required.` });
     if (!/^\S+@\S+\.\S+$/.test(req.body.email)) return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
     if (!/^[+\d][\d\s-]{7,14}$/.test(req.body.phone)) return res.status(400).json({ success: false, message: 'Enter a valid phone number.' });
-    const item = await Counselling.create({ ...req.body, studentObjectId: req.student._id, email: req.body.email.toLowerCase(), image: req.file ? `/uploads/counselling/${req.file.filename}` : '' });
+    storedImage = req.file ? await storeUploadedFile(req.file) : '';
+    const item = await Counselling.create({ ...req.body, studentObjectId: req.student._id, email: req.body.email.toLowerCase(), image: storedImage });
     return res.status(201).json({ success: true, message: 'Counselling request submitted.', item });
-  } catch (error) { return next(error); }
+  } catch (error) {
+    if (storedImage) await deleteStoredFile(storedImage);
+    return next(error);
+  }
 }
 
 export async function listStudentCounselling(req, res, next) {
@@ -47,6 +54,7 @@ export async function deleteStudentCounselling(req, res, next) {
     const item = await Counselling.findOne({ _id: req.params.id, studentObjectId: req.student._id });
     if (!item) return res.status(404).json({ success: false, message: 'Counselling request not found.' });
     if (['Resolved', 'Closed'].includes(item.status)) return res.status(409).json({ success: false, message: 'Resolved or closed requests cannot be deleted.' });
+    await deleteStoredFile(item.image);
     await item.deleteOne();
     return res.json({ success: true, message: 'Counselling request deleted.' });
   } catch (error) { return next(error); }
@@ -83,7 +91,7 @@ export async function updateAdminCounselling(req, res, next) {
   } catch (error) { return next(error); }
 }
 
-export async function deleteAdminCounselling(req, res, next) { try { const item = await Counselling.findByIdAndDelete(req.params.id); if (!item) return res.status(404).json({ success: false, message: 'Counselling request not found.' }); return res.json({ success: true, message: 'Counselling request deleted.' }); } catch (error) { return next(error); } }
+export async function deleteAdminCounselling(req, res, next) { try { const item = await Counselling.findByIdAndDelete(req.params.id); if (!item) return res.status(404).json({ success: false, message: 'Counselling request not found.' }); await deleteStoredFile(item.image); return res.json({ success: true, message: 'Counselling request deleted.' }); } catch (error) { return next(error); } }
 
 export async function listNotifications(req, res, next) { try { const items = await Notification.find({ studentId: req.student._id }).sort({ createdAt: -1 }).limit(50); return res.json({ success: true, items, unread: items.filter((x) => !x.isRead).length }); } catch (error) { return next(error); } }
 export async function readNotification(req, res, next) { try { const item = await Notification.findOneAndUpdate({ _id: req.params.id, studentId: req.student._id }, { isRead: true }, { new: true }); if (!item) return res.status(404).json({ success: false, message: 'Notification not found.' }); return res.json({ success: true, item }); } catch (error) { return next(error); } }

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Alert, Badge, Container, Spinner } from "react-bootstrap";
 import logo from "./assets/navbarlogo_adminpage.png";
+import { resolveMediaUrl } from "./services/mediaUrl";
 
 const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const categories = [
@@ -83,7 +84,7 @@ function StudentCounselling({ notify }) {
     setSubmitting(false);
     if (saved) setSelected(null);
   };
-  const imageUrl = selected?.image ? `${API.replace(/\/api$/, "")}${selected.image}` : "";
+  const imageUrl = resolveMediaUrl(selected?.image);
   return <AdminSection title="Student Counselling" subtitle="Review, reply to, and track every student counselling request."><div className="admin-metrics">{["Total","Pending","In Progress","Resolved","Closed"].map((label) => <article key={label}><span>{label}</span><strong>{label === "Total" ? Object.values(counts).reduce((a,b) => a+b,0) : counts[label] || 0}</strong><p>Counselling requests</p></article>)}</div><div className="admin-toolbar counselling-filters"><input placeholder="Search student, ID, department or category" value={search} onChange={(e)=>setSearch(e.target.value)}/><select value={status} onChange={(e)=>setStatus(e.target.value)}><option value="">All statuses</option>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select><select value={priority} onChange={(e)=>setPriority(e.target.value)}><option value="">All priorities</option>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select></div>{loading ? <Spinner animation="border"/> : <Table headers={["Student","Student ID","Department","Subject","Category","Status","Priority","Date","Actions"]} rows={items.map((item)=>[item.name,item.studentId,item.department,item.subject,item.category,<select value={item.status} onChange={(e)=>update(item,{status:e.target.value})}>{["Pending","In Progress","Resolved","Closed"].map(x=><option key={x}>{x}</option>)}</select>,<select value={item.priority} onChange={(e)=>update(item,{priority:e.target.value})}>{["Low","Medium","High","Urgent"].map(x=><option key={x}>{x}</option>)}</select>,date(item.createdAt),<Actions><button onClick={()=>open(item)}>View / Reply</button><button onClick={()=>remove(item)}>Delete</button></Actions>])}/>} {selected && <div className="admin-modal-backdrop" onMouseDown={()=>setSelected(null)}><section className="admin-detail-panel admin-detail-modal counselling-modal" onMouseDown={(event)=>event.stopPropagation()}><div className="admin-detail-panel__header"><div><span>Student counselling request</span><h2>{selected.subject}</h2></div><button type="button" onClick={()=>setSelected(null)}>Close</button></div><div className="admin-detail-grid counselling-details-grid"><div><span>Student</span><strong>{selected.name}</strong></div><div><span>Student ID</span><strong>{selected.studentId}</strong></div><div><span>Contact</span><strong>{selected.email}<br/>{selected.phone}</strong></div><div><span>Department</span><strong>{selected.department}</strong></div><div><span>Semester</span><strong>{selected.semester}</strong></div><div><span>Category</span><strong>{selected.category}</strong></div><div><span>Status</span><strong>{selected.status}</strong></div><div><span>Priority</span><strong>{selected.priority}</strong></div><div><span>Submitted</span><strong>{date(selected.createdAt)}</strong></div></div><div className="counselling-modal__content"><article><h3>Complete problem details</h3><p className="counselling-description">{selected.description}</p>{imageUrl ? <><h3>Uploaded image</h3><button type="button" className="counselling-image-button" onClick={()=>window.open(imageUrl,"_blank","noopener,noreferrer")}><img className="admin-counselling-image" src={imageUrl} alt={`Uploaded evidence for ${selected.subject}`}/><span>Click image to open full size</span></button></> : <p className="admin-empty-state">No image was uploaded.</p>}</article><form className="counselling-response-form" onSubmit={submitResponse}><h3>Admin response</h3><label>Response to student<textarea rows="6" required value={reply} onChange={(e)=>setReply(e.target.value)} placeholder="Write the response the student will receive..."/></label><label>Private admin notes<textarea rows="4" value={notes} onChange={(e)=>setNotes(e.target.value)} placeholder="Optional notes visible only to admins"/></label><div className="admin-popup-actions"><button type="submit" disabled={submitting}>{submitting ? "Sending..." : "Send response"}</button><button type="button" className="danger" disabled={submitting} onClick={()=>remove(selected)}>Delete request</button></div></form></div></section></div>}</AdminSection>;
 }
 const date = (value) =>
@@ -515,12 +516,12 @@ function Products({ notify }) {
         <input
           name="images"
           type="file"
-          accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+          accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif"
           multiple
           onChange={change}
           required={!editing}
         />
-        <small className="product-form__image-help">Choose 1–5 JPG, JPEG, or PNG photos (maximum 2 MB each). The first photo appears on storefront cards.</small>
+        <small className="product-form__image-help">Choose 1–5 JPG, JPEG, PNG, GIF, WebP, or AVIF photos (maximum 2 MB each). The first photo appears on storefront cards.</small>
         <input
           name="name"
           placeholder="Product name"

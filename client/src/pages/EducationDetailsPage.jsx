@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Alert, Container, Modal, Spinner } from 'react-bootstrap';
 import { createEducationApplication, fetchEducationItemDetails } from '../services/api';
+import SafeImage from '../components/SafeImage';
 import { resolveMediaUrl } from '../services/mediaUrl';
 import { readStudentSession } from '../services/studentSession';
 
@@ -318,7 +319,8 @@ export default function EducationDetailsPage() {
 
   return (
     <section className="education-profile-page">
-      <div className="education-profile-hero" style={heroImage ? { backgroundImage: `url("${heroImage}")` } : undefined}>
+      <div className="education-profile-hero">
+        <SafeImage className="education-profile-hero__image" src={heroImage} alt="" aria-hidden="true" />
         <Link to={category.path} className="education-profile-hero__arrow education-profile-hero__arrow--left" aria-label={`Back to ${category.title}`}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m15 18-6-6 6-6" />
@@ -409,7 +411,7 @@ export default function EducationDetailsPage() {
                 </label>
                 <label className="course-apply-form__wide">
                   <span>Supporting document</span>
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={handleDocumentChange} />
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.avif,application/pdf,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleDocumentChange} />
                   <small>PDF, JPG, JPEG, or PNG · maximum 2 MB{applicationForm.documentName ? ` · ${applicationForm.documentName}` : ''}</small>
                 </label>
                 <label className="course-apply-form__check">
@@ -452,7 +454,7 @@ export default function EducationDetailsPage() {
             {activityItems.map((activity) => (
               <article key={activity.id || activity.title} className="center-activity-card">
                 {activity.image ? (
-                  <img src={activity.image} alt={activity.title} loading="lazy" />
+                  <SafeImage src={activity.image} alt={activity.title} loading="lazy" />
                 ) : (
                   <div className="center-activity-card__empty">{getInitials(activity.title)}</div>
                 )}

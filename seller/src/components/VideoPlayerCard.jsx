@@ -1,3 +1,5 @@
+import SafeImage from './SafeImage';
+
 export default function VideoPlayerCard({ video, isActive, onSelect }) {
   const thumbnail = video.thumbnail || video.image || video.profileImage || '';
 
@@ -9,7 +11,7 @@ export default function VideoPlayerCard({ video, isActive, onSelect }) {
     >
       <div className="video-list-item__thumb-wrap">
         {thumbnail ? (
-          <img src={thumbnail} alt={video.title} className="video-list-item__thumb" loading="lazy" />
+          <SafeImage src={thumbnail} alt={video.title} className="video-list-item__thumb" loading="lazy" />
         ) : (
           <div className="video-list-item__thumb video-list-item__thumb--empty">
             {video.title?.slice(0, 2) || 'WN'}

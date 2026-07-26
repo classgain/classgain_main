@@ -127,14 +127,14 @@ export default function VideoUploaderChannelPage() {
 
               <label className="portal-form__field">
                 <span>Channel banner image</span>
-                <input type="file" accept="image/*" onChange={handleImageChange} />
+                <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleImageChange} />
               </label>
 
               {previewImage ? <img className="portal-form__preview" src={previewImage} alt="Video channel banner preview" /> : null}
 
               <label className="portal-form__field">
                 <span>Creator profile image</span>
-                <input type="file" accept="image/*" onChange={handleProfileImageChange} />
+                <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleProfileImageChange} />
               </label>
 
               {profilePreviewImage ? <img className="portal-form__preview portal-form__preview--small" src={profilePreviewImage} alt="Video creator profile preview" /> : null}

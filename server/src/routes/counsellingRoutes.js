@@ -1,13 +1,17 @@
-import fs from 'node:fs';
 import { Router } from 'express';
 import multer from 'multer';
 import { createCounselling, deleteAdminCounselling, deleteStudentCounselling, getAdminCounselling, getStudentCounselling, listAdminCounselling, listNotifications, listStudentCounselling, readNotification, updateAdminCounselling, updateStudentCounselling } from '../controllers/counsellingController.js';
 import { requireStudent } from '../middleware/counsellingAuth.js';
-import { resolveUploadDirectory } from '../utils/uploadDirectory.js';
+import { isSupportedImageFile, unsupportedImageError } from '../utils/imageFiles.js';
 
-const directory = resolveUploadDirectory('counselling');
-fs.mkdirSync(directory, { recursive: true });
-const upload = multer({ storage: multer.diskStorage({ destination: directory, filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '-')}`) }), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => { const ok = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype); cb(ok ? null : new Error('Only JPG, PNG, and WebP images are allowed.'), ok); } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const supported = isSupportedImageFile(file);
+    cb(supported ? null : unsupportedImageError(), supported);
+  }
+});
 const router = Router();
 router.post('/counselling', requireStudent, upload.single('image'), createCounselling);
 router.get('/counselling', requireStudent, listStudentCounselling);

@@ -146,36 +146,81 @@ function validateEnvironment() {
 
 const allowedOrigins = createAllowedOrigins();
 
-function corsOrigin(origin, callback) {
-  if (!origin) {
-    return callback(null, true);
+function isLocalDevelopmentOrigin(origin) {
+  if (isProduction) {
+    return false;
   }
 
+  try {
+    const parsedOrigin = new URL(origin);
+    const hostname = parsedOrigin.hostname.toLowerCase();
+    const isPrivateIpv4 =
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname);
+
+    return (
+      ['http:', 'https:'].includes(parsedOrigin.protocol) &&
+      (hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname === '[::1]' ||
+        isPrivateIpv4)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function requestCameThroughSameOriginProxy(req, origin) {
+  try {
+    const originHost = new URL(origin).host.toLowerCase();
+    const forwardedHosts = [
+      req.get('x-forwarded-host'),
+      req.get('x-vercel-forwarded-host')
+    ]
+      .filter(Boolean)
+      .flatMap((value) => value.split(','))
+      .map((value) => value.trim().toLowerCase());
+
+    return forwardedHosts.includes(originHost);
+  } catch {
+    return false;
+  }
+}
+
+function isCorsOriginAllowed(req, origin) {
   const normalizedOrigin = origin.replace(/\/$/, '');
 
-  if (
-    !isProduction &&
-    /^https?:\/\/(?:localhost|127\.0\.0\.1):\d+$/.test(normalizedOrigin)
-  ) {
-    return callback(null, true);
+  return (
+    isLocalDevelopmentOrigin(normalizedOrigin) ||
+    allowedOrigins.has(normalizedOrigin) ||
+    requestCameThroughSameOriginProxy(req, normalizedOrigin)
+  );
+}
+
+const baseCorsOptions = {
+  credentials: true,
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400
+};
+
+function corsOptionsDelegate(req, callback) {
+  const origin = req.get('Origin');
+
+  if (!origin) {
+    return callback(null, { ...baseCorsOptions, origin: false });
   }
 
-  if (allowedOrigins.has(normalizedOrigin)) {
-    return callback(null, true);
+  if (isCorsOriginAllowed(req, origin)) {
+    return callback(null, { ...baseCorsOptions, origin });
   }
 
   const corsError = new Error(`Origin ${origin} is not allowed by CORS.`);
   corsError.status = 403;
   return callback(corsError);
 }
-
-const corsOptions = {
-  origin: corsOrigin,
-  credentials: true,
-  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400
-};
 
 const apiRateLimiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
@@ -207,8 +252,8 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' }
   })
 );
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.use(cors(corsOptionsDelegate));
+app.options('*', cors(corsOptionsDelegate));
 app.use(compression());
 
 app.use((req, res, next) => {
@@ -352,6 +397,10 @@ app.use((error, _req, res, _next) => {
   const status =
     error.type === 'entity.too.large'
       ? 413
+      : error.name === 'MulterError'
+        ? error.code === 'LIMIT_FILE_SIZE'
+          ? 413
+          : 400
       : error instanceof SyntaxError && error.status === 400
         ? 400
         : Number(error.status) || 500;

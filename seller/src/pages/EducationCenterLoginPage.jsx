@@ -1453,7 +1453,7 @@ export default function EducationCenterLoginPage() {
 
                 <label className="portal-form__field">
                   <span>Select image</span>
-                  <input type="file" accept="image/*" onChange={handleImageUploadChange} />
+                  <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleImageUploadChange} />
                 </label>
 
                 <div className="education-media-form__checks">
@@ -1556,7 +1556,7 @@ export default function EducationCenterLoginPage() {
 
                 <label className="portal-form__field">
                   <span>Thumbnail image</span>
-                  <input type="file" accept="image/*" onChange={handleVideoThumbnailChange} />
+                  <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleVideoThumbnailChange} />
                 </label>
 
                 {videoPreview ? <img className="portal-form__preview" src={videoPreview} alt="Video thumbnail preview" /> : null}

@@ -1,5 +1,8 @@
 import fs from 'node:fs';
+import { Readable } from 'node:stream';
 import mongoose from 'mongoose';
+
+import { normalizeImageMimeType } from './imageFiles.js';
 
 const BUCKET_NAME = 'registrationMedia';
 
@@ -9,14 +12,16 @@ function getBucket() {
 }
 
 export async function storeUploadedFile(file) {
-  if (!file?.path) return '';
+  if (!file?.path && !file?.buffer) return '';
+  const contentType = normalizeImageMimeType(file) || file.mimetype || 'application/octet-stream';
   const upload = getBucket().openUploadStream(file.originalname, {
-    contentType: file.mimetype,
+    contentType,
     metadata: { fieldName: file.fieldname, uploadedAt: new Date() }
   });
 
   await new Promise((resolve, reject) => {
-    fs.createReadStream(file.path)
+    const source = file.buffer ? Readable.from(file.buffer) : fs.createReadStream(file.path);
+    source
       .on('error', reject)
       .pipe(upload)
       .on('error', reject)
@@ -43,12 +48,17 @@ export async function streamStoredFile(req, res, next) {
     const fileId = new mongoose.Types.ObjectId(req.params.fileId);
     const [file] = await bucket.find({ _id: fileId }).limit(1).toArray();
     if (!file) return res.status(404).json({ success: false, message: 'Media not found.' });
+    const contentType =
+      normalizeImageMimeType({ mimetype: file.contentType, originalname: file.filename }) ||
+      file.contentType ||
+      'application/octet-stream';
 
     res.set({
-      'Content-Type': file.contentType || 'application/octet-stream',
+      'Content-Type': contentType,
       'Content-Length': String(file.length),
       'Content-Disposition': `inline; filename="${encodeURIComponent(file.filename)}"`,
-      'Cache-Control': 'public, max-age=31536000, immutable'
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cross-Origin-Resource-Policy': 'cross-origin'
     });
     return bucket.openDownloadStream(fileId).on('error', next).pipe(res);
   } catch (error) {

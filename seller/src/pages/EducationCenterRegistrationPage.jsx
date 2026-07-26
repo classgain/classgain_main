@@ -27,10 +27,10 @@ const initialRegistrationForm = {
 };
 
 const uploadFields = [
-  { key: 'registrationCertificate', label: 'Registration certificate', accept: 'image/*,.pdf' },
-  { key: 'idProof', label: 'ID proof', accept: 'image/*,.pdf' },
-  { key: 'addressProof', label: 'Address proof', accept: 'image/*,.pdf' },
-  { key: 'logo', label: 'Logo', accept: 'image/*' }
+  { key: 'registrationCertificate', label: 'Registration certificate', accept: '.jpg,.jpeg,.png,.gif,.webp,.avif,.pdf,image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf' },
+  { key: 'idProof', label: 'ID proof', accept: '.jpg,.jpeg,.png,.gif,.webp,.avif,.pdf,image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf' },
+  { key: 'addressProof', label: 'Address proof', accept: '.jpg,.jpeg,.png,.gif,.webp,.avif,.pdf,image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf' },
+  { key: 'logo', label: 'Logo', accept: '.jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif' }
 ];
 
 function readFileAsDataUrl(file) {

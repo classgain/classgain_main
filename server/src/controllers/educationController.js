@@ -452,8 +452,8 @@ export async function createEducationApplication(req, res, next) {
     const scholarshipInterest = req.body.scholarshipInterest === true || req.body.scholarshipInterest === 'true';
     const documentData = String(req.body.documentData || '');
 
-    if (documentData && (!/^data:(application\/pdf|image\/(jpeg|png));base64,/i.test(documentData) || documentData.length > 2_800_000)) {
-      return res.status(400).json({ success: false, message: 'Supporting document must be a PDF, JPG, JPEG, or PNG no larger than 2 MB.' });
+    if (documentData && (!/^data:(application\/pdf|image\/(jpeg|png|gif|webp|avif));base64,/i.test(documentData) || documentData.length > 2_800_000)) {
+      return res.status(400).json({ success: false, message: 'Supporting document must be a PDF, JPG, JPEG, PNG, GIF, WebP, or AVIF no larger than 2 MB.' });
     }
 
     if (!studentName || !mobile || !course || !currentStudy || !completedStudy || !completedStudyPercentage || !address) {

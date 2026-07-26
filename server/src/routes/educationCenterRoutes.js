@@ -7,6 +7,7 @@ import {
   loginEducationCenter,
   registerEducationCenter
 } from '../controllers/educationCenterController.js';
+import { isSupportedImageFile, unsupportedImageError } from '../utils/imageFiles.js';
 import { resolveUploadDirectory } from '../utils/uploadDirectory.js';
 
 const router = Router();
@@ -19,8 +20,11 @@ const registrationUpload = multer({
   }),
   limits: { fileSize: 100 * 1024 * 1024, files: 4 },
   fileFilter: (_req, file, callback) => {
-    const allowed = file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/');
-    callback(allowed ? null : new Error('Registration files must be an image or PDF.'), allowed);
+    const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf');
+    const allowed = isPdf || isSupportedImageFile(file);
+    const error = isPdf ? null : unsupportedImageError();
+    if (error) error.message = 'Registration files must be PDF, JPG, JPEG, PNG, GIF, WebP, or AVIF.';
+    callback(allowed ? null : error, allowed);
   }
 });
 

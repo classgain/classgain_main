@@ -1,5 +1,4 @@
-import { API } from './api';
-
+const API = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const absoluteMediaPattern = /^(?:https?:|data:|blob:)/i;
 
 export function resolveMediaUrl(value) {
@@ -13,7 +12,7 @@ export function resolveMediaUrl(value) {
         url.protocol = 'https:';
       }
       return url.href;
-    } catch (_error) {
+    } catch {
       return normalized;
     }
   }
@@ -23,11 +22,7 @@ export function resolveMediaUrl(value) {
   try {
     const apiUrl = new URL(API, window.location.origin);
     return apiUrl.origin === window.location.origin ? mediaPath : `${apiUrl.origin}${mediaPath}`;
-  } catch (_error) {
+  } catch {
     return mediaPath;
   }
-}
-
-export function resolveMediaUrls(values = []) {
-  return [...new Set(values.map(resolveMediaUrl).filter(Boolean))];
 }

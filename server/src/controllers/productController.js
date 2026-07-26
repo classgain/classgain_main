@@ -1,11 +1,14 @@
 import Product from '../model/productModel.js';
+import { normalizeImageMimeType } from '../utils/imageFiles.js';
 
 const slugify = (value) => String(value).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const productData = (body, files = [], current = {}) => {
   const price = Number(body.price ?? current.price ?? 0);
   const discount = Number(body.discount ?? current.discount ?? 0);
   // Data URLs remain available after restarts on hosts with ephemeral filesystems.
-  const uploadedImages = files.map((file) => `data:${file.mimetype};base64,${file.buffer.toString('base64')}`);
+  const uploadedImages = files.map(
+    (file) => `data:${normalizeImageMimeType(file)};base64,${file.buffer.toString('base64')}`
+  );
   const currentImages = Array.isArray(current.images) && current.images.length
     ? current.images
     : current.image ? [current.image] : [];

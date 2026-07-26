@@ -173,14 +173,14 @@ export default function EducationCenterUploadPage() {
 
               <label className="portal-form__field">
                 <span>College main image</span>
-                <input type="file" accept="image/*" onChange={handleImageChange} />
+                <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleImageChange} />
               </label>
 
               {previewImage ? <img className="portal-form__preview" src={previewImage} alt="Education center preview" /> : null}
 
               <label className="portal-form__field">
                 <span>College profile image</span>
-                <input type="file" accept="image/*" onChange={handleProfileImageChange} />
+                <input type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,image/jpeg,image/png,image/gif,image/webp,image/avif" onChange={handleProfileImageChange} />
               </label>
 
               {profilePreviewImage ? <img className="portal-form__preview portal-form__preview--small" src={profilePreviewImage} alt="Education center profile preview" /> : null}
