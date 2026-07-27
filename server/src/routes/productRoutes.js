@@ -13,5 +13,9 @@ const upload = multer({
 });
 const router = Router();
 router.get('/products', listProducts); router.get('/products/category/:category', listCategoryProducts); router.get('/products/:id', getProduct);
+router.get('/admin/products', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+}, listProducts);
 router.post('/admin/products', upload.array('images', 5), createProduct); router.put('/admin/products/:id', upload.array('images', 5), updateProduct); router.delete('/admin/products/:id', deleteProduct);
 export default router;

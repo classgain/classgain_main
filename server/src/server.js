@@ -86,6 +86,10 @@ function createAllowedOrigins() {
     'http://127.0.0.1:5174',
     'http://localhost:5175',
     'http://127.0.0.1:5175',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:8088',
+    'http://127.0.0.1:8088',
     'https://classgain.com',
     'https://www.classgain.com',
     'https://studeup.com',
@@ -99,7 +103,8 @@ function createAllowedOrigins() {
       process.env.FRONTEND_URLS,
       process.env.CLIENT_URL,
       process.env.SELLER_URL,
-      process.env.ADMIN_URL
+      process.env.ADMIN_URL,
+      process.env.MOBILE_URL
     ]
       .filter(Boolean)
       .flatMap(splitOrigins)
@@ -125,11 +130,11 @@ function validateEnvironment() {
 
   if (isProduction && allowedOrigins.size === 0) {
     throw new Error(
-      'Configure at least one frontend origin with FRONTEND_URLS, CLIENT_URL, SELLER_URL, or ADMIN_URL.'
+      'Configure at least one frontend origin with FRONTEND_URLS, CLIENT_URL, SELLER_URL, ADMIN_URL, or MOBILE_URL.'
     );
   }
 
-  for (const name of ['FRONTEND_URLS', 'CLIENT_URL', 'SELLER_URL', 'ADMIN_URL']) {
+  for (const name of ['FRONTEND_URLS', 'CLIENT_URL', 'SELLER_URL', 'ADMIN_URL', 'MOBILE_URL']) {
     for (const origin of splitOrigins(process.env[name])) {
       const parsedOrigin = new URL(origin);
 

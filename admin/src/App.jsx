@@ -436,11 +436,12 @@ function Products({ notify }) {
     [category, setCategory] = useState(""),
     [page, setPage] = useState(1),
     [pages, setPages] = useState(1),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [deletingId, setDeletingId] = useState("");
   const load = () => {
     setLoading(true);
     return request(
-      `/products?status=all&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&page=${page}&limit=8`,
+      `/admin/products?status=all&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&page=${page}&limit=8`,
     )
       .then((d) => {
         setItems(d.items || []);
@@ -496,13 +497,23 @@ function Products({ notify }) {
     scrollTo({ top: 0, behavior: "smooth" });
   };
   const remove = async (p) => {
-    if (!confirm(`Delete ${p.name}?`)) return;
+    if (!window.confirm(`Delete ${p.name}?`)) return;
+    setDeletingId(p._id);
     try {
       const d = await request(`/admin/products/${p._id}`, { method: "DELETE" });
+      setItems((currentItems) =>
+        currentItems.filter((item) => item._id !== (d.deletedProductId || p._id)),
+      );
+      if (editing === p._id) {
+        setEditing("");
+        setForm(emptyProduct);
+      }
       notify("success", d.message);
-      load();
+      await load();
     } catch (e) {
       notify("error", e.message);
+    } finally {
+      setDeletingId("");
     }
   };
   const final =
@@ -671,8 +682,12 @@ function Products({ notify }) {
             date(p.createdAt),
             <Actions>
               <button onClick={() => edit(p)}>Edit</button>
-              <button className="danger" onClick={() => remove(p)}>
-                Delete
+              <button
+                className="danger"
+                disabled={deletingId === p._id}
+                onClick={() => remove(p)}
+              >
+                {deletingId === p._id ? "Deleting..." : "Delete"}
               </button>
             </Actions>,
           ])}
