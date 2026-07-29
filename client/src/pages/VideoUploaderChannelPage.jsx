@@ -110,7 +110,7 @@ export default function VideoUploaderChannelPage() {
             <h1>Create your own learning channel like a YouTube education studio</h1>
             <p>
               Register your teaching channel, upload the banner image, add intro and reels video links, and prepare
-              your own education stream inside What Next.
+              your own education stream inside ClassGain.
             </p>
 
             <div className="portal-summary-card portal-summary-card--video">
@@ -147,7 +147,7 @@ export default function VideoUploaderChannelPage() {
                     name="channelName"
                     value={formData.channelName}
                     onChange={handleChange}
-                    placeholder="What Next Learning TV"
+                    placeholder="ClassGain Learning TV"
                   />
                 </label>
 

@@ -61,7 +61,7 @@ function getCenterCategoryConfig(category) {
 }
 
 function buildCenterDescription(center) {
-  return `${center.education_center_name} is an approved ${center.category.toLowerCase()} listed on What Next.`;
+  return `${center.education_center_name} is an approved ${center.category.toLowerCase()}, verified by ClassGain Team Trulee.`;
 }
 
 function serializeEducationCenter(center, options = {}) {
@@ -151,7 +151,7 @@ function buildDashboardPayload(partner, profile) {
       address: source?.address || '',
       heroImage,
       logoImage: source?.profileImage || heroImage,
-      website: 'www.whatnextcampus.edu.in',
+      website: 'www.classgain.in',
       contactEmail: source?.contactEmail || partner.officialEmail,
       phone: source?.phone || partner.phone,
       description: source?.description || '',

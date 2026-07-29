@@ -1,6 +1,6 @@
-# What Next
+# ClassGain
 
-What Next is a MERN education platform with three React + Vite applications and one shared Express + MongoDB API.
+ClassGain is a MERN education platform with three React + Vite applications and one shared Express + MongoDB API.
 
 ## Applications
 

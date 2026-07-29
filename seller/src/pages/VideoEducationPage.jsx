@@ -95,7 +95,7 @@ export default function VideoEducationPage() {
             <div className="video-search-bar__brand-group">
               <div className="video-search-bar__logo">Play</div>
               <div>
-                <p className="video-search-bar__eyebrow">What Next Stream</p>
+                <p className="video-search-bar__eyebrow">ClassGain Stream</p>
                 <h1 className="video-search-bar__title">Video Education</h1>
               </div>
             </div>

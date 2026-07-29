@@ -7,11 +7,11 @@ import SearchRibbon from './SearchRibbon';
 const baseTopLinks = [
   { label: 'Help', to: '/help-center' },
   { label: 'Counselling', to: '/counselling' },
-  { label: 'Ecommerce Order Page', to: '/ecommerce-orders' }
+  { label: 'Buying Orders', to: '/buyer-orders' }
 ];
 
 const orderTopLinks = [
-  { label: 'Ecommerce Order Page', to: '/ecommerce-orders' }
+  { label: 'Buying Orders', to: '/buyer-orders' }
 ];
 
 const accountTopLinks = [
@@ -25,6 +25,17 @@ const bottomLinks = [
   { label: 'Ecommerce Home', to: '/ecommerce' }
 ];
 
+const searchEnabledPaths = new Set([
+  '/',
+  '/home',
+  '/startingeducation',
+  '/starting-education',
+  '/highereducation',
+  '/higher-education',
+  '/additionaleducation',
+  '/additional-education'
+]);
+
 export default function AppShellMainOnly() {
   const location = useLocation();
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
@@ -33,7 +44,8 @@ export default function AppShellMainOnly() {
   const topLinks = location.pathname.startsWith('/ecommerce-orders')
     ? [...baseTopLinks.slice(0, 2), ...orderTopLinks, ...accountTopLinks]
     : [...baseTopLinks, ...accountTopLinks];
-  const isEcommerceArea = location.pathname.startsWith('/ecommerce');
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
+  const showSearchRibbon = searchEnabledPaths.has(normalizedPath);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,8 +60,12 @@ export default function AppShellMainOnly() {
   }, []);
 
   useEffect(() => {
-    lastScrollYRef.current = window.scrollY;
-    setIsHeaderScrolled(window.scrollY > 8);
+    const frameId = window.requestAnimationFrame(() => {
+      lastScrollYRef.current = window.scrollY;
+      setIsHeaderScrolled(window.scrollY > 8);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname]);
 
   return (
@@ -124,7 +140,7 @@ export default function AppShellMainOnly() {
         </Container>
       </Navbar>
 
-      {!isEcommerceArea ? <SearchRibbon /> : null}
+      {showSearchRibbon ? <SearchRibbon /> : null}
 
       {/* Page Content */}
       <main>

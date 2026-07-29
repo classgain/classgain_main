@@ -301,6 +301,97 @@
   padding: 2rem 1rem 3rem;
 }
 
+.student-access-picker {
+  width: min(100%, 1180px);
+  margin: 0 auto 1.25rem;
+  padding: 1.2rem;
+  border: 1px solid rgba(18, 58, 99, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 45px rgba(8, 31, 58, 0.1);
+}
+
+.student-access-picker > div:first-child {
+  margin-bottom: 1rem;
+}
+
+.student-access-picker__eyebrow {
+  color: var(--wn-green);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.student-access-picker h1 {
+  margin: 0.25rem 0 0;
+  color: var(--wn-blue-deep);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 900;
+}
+
+.student-access-picker__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.student-access-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid rgba(18, 58, 99, 0.1);
+  border-radius: 18px;
+  background: #f8fbfd;
+  color: var(--wn-blue-deep);
+  text-align: left;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-access-option:hover,
+.student-access-option--active {
+  transform: translateY(-2px);
+  border-color: var(--wn-blue);
+  box-shadow: 0 12px 25px rgba(18, 58, 99, 0.12);
+}
+
+.student-access-option--active {
+  background: linear-gradient(135deg, rgba(18, 58, 99, 0.08), rgba(34, 139, 34, 0.1));
+}
+
+.student-access-option__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--wn-blue);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.student-access-option__icon--buyer {
+  background: var(--wn-green);
+}
+
+.student-access-option strong,
+.student-access-option small {
+  display: block;
+}
+
+.student-access-option strong {
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.student-access-option small {
+  color: var(--wn-muted);
+  line-height: 1.45;
+}
+
 .student-auth-grid {
   width: min(100%, 1180px);
   margin: 0 auto;
@@ -1866,6 +1957,7 @@
     .student-inline-form__grid,
     .portal-form__split,
     .student-auth-metrics,
+    .student-access-picker__options,
   .education-auth-metrics,
   .education-detail-grid,
   .education-detail-card__controls,

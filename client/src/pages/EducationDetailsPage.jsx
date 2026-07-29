@@ -75,6 +75,7 @@ function buildFallbackDetails(item, categoryTitle) {
     videos: item.videoUrl
       ? [{ id: 'video-main', title: `${item.title} video`, videoUrl: item.videoUrl, image: item.image || item.thumbnail || '' }]
       : [],
+    centerDetails: [],
     stats: {
       students: '6000+',
       faculty: '250+',
@@ -182,7 +183,8 @@ export default function EducationDetailsPage() {
       activity: details?.activity?.length ? details.activity : buildFallbackDetails(item, category?.title).activity,
       scholarships: details?.scholarships?.length
         ? details.scholarships
-        : buildFallbackDetails(item, category?.title).scholarships
+        : buildFallbackDetails(item, category?.title).scholarships,
+      centerDetails: details?.centerDetails || []
     };
   }, [category?.title, details, item]);
 
@@ -225,6 +227,7 @@ export default function EducationDetailsPage() {
     image: resolveMediaUrl(activity.image)
   }));
   const scholarshipItems = resolvedDetails.scholarships.slice(0, 4);
+  const centerDetails = resolvedDetails.centerDetails || [];
   const stats = resolvedDetails.stats || {};
 
   const handleApplyClick = (course) => {
@@ -480,6 +483,28 @@ export default function EducationDetailsPage() {
             ))}
           </div>
         </section>
+
+        {centerDetails.length ? (
+          <section className="profile-section center-detail-public-section">
+            <div className="profile-section__heading">
+              <span>Facilities, outcomes, and specialities</span>
+              <h2>Center Details</h2>
+            </div>
+            <div className="center-detail-public-grid">
+              {centerDetails.map((detail, index) => (
+                <article className="center-detail-public-card" key={detail.id || `${detail.label}-${index}`}>
+                  <span className={`center-detail-public-card__icon center-detail-public-card__icon--${index % 4}`}>
+                    <DetailIcon index={index} />
+                  </span>
+                  <div>
+                    <h3>{detail.label}</h3>
+                    <p>{detail.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </Container>
 
       <div className="education-profile-footer">

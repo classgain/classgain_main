@@ -13,6 +13,7 @@ const EducationCategoryPage = lazy(() => import('./pages/EducationCategoryPage')
 const EcommerceHomePage = lazy(() => import('./pages/EcommerceHomePage'));
 const EcommerceOrderPage = lazy(() => import('./pages/EcommerceOrderPage'));
 const EducationSearchPage = lazy(() => import('./pages/EducationSearchPage'));
+const BuyerOrdersPage = lazy(() => import('./pages/BuyerOrdersPage'));
 
 const categoryConfig = {
   primary: {
@@ -100,6 +101,7 @@ export default function App() {
         <Route path="ecommerce-orders" element={<EcommerceOrderPage />} />
         <Route path="education-search" element={<EducationSearchPage />} />
       </Route>
+      <Route path="/buyer-orders" element={<BuyerOrdersPage />} />
     </Routes></Suspense>
   );
 }

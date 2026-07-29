@@ -202,6 +202,29 @@ const videoItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const centerDetailSchema = new mongoose.Schema(
+  {
+    id: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    label: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100
+    },
+    value: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000
+    }
+  },
+  { _id: false }
+);
+
 const educationCenterUploadSchema = new mongoose.Schema(
   {
     partnerId: {
@@ -259,6 +282,10 @@ const educationCenterUploadSchema = new mongoose.Schema(
     },
     videoItems: {
       type: [videoItemSchema],
+      default: []
+    },
+    centerDetails: {
+      type: [centerDetailSchema],
       default: []
     }
   },

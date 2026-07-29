@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   createStudentDashboardItem,
   deleteStudentDashboardItem,
@@ -341,6 +341,10 @@ function StudentOrders({ token }) {
 
 export default function LoginPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [accessMode, setAccessMode] = useState(() => (
+    location.state?.accessMode === 'buyer' || location.state?.panel === 'orders' ? 'buyer' : 'student'
+  ));
   const [authMode, setAuthMode] = useState('signin');
   const [authForm, setAuthForm] = useState(initialAuthForm);
   const [session, setSession] = useState(() => readStoredStudentSession());
@@ -375,6 +379,12 @@ export default function LoginPage() {
   const ordersRef = useRef(null);
 
   const resolvedStudent = useMemo(() => normalizeStudentData(student), [student]);
+
+  useEffect(() => {
+    if (session?.token && accessMode === 'buyer') {
+      navigate('/buyer-orders', { replace: true });
+    }
+  }, [accessMode, navigate, session?.token]);
 
   useEffect(() => {
     let isMounted = true;
@@ -666,6 +676,17 @@ export default function LoginPage() {
     setStatus({ type: '', message: '' });
   };
 
+  const handleAccessModeChange = (mode) => {
+    setAccessMode(mode);
+    setAuthMode('signin');
+    setAuthForm(initialAuthForm);
+    setStatus({ type: '', message: '' });
+
+    if (mode === 'buyer' && session?.token) {
+      navigate('/buyer-orders');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatus({ type: '', message: '' });
@@ -727,6 +748,10 @@ export default function LoginPage() {
           ? 'Student account created successfully. Your dashboard is ready.'
           : 'Signed in successfully. Loading your student dashboard.'
       });
+
+      if (accessMode === 'buyer') {
+        navigate('/buyer-orders', { replace: true });
+      }
     } catch (error) {
       setStatus({ type: 'error', message: error.message || 'Unable to complete the request right now.' });
     } finally {
@@ -739,6 +764,7 @@ export default function LoginPage() {
     setSession(null);
     setStudent(null);
     setSelectedPanel('profile');
+    setAccessMode('student');
     setAuthMode('signin');
     setAuthForm(initialAuthForm);
     setStatus({
@@ -756,19 +782,61 @@ export default function LoginPage() {
           <div className={`dashboard-page__status dashboard-page__status--${statusTone}`}>{status.message}</div>
         ) : null}
 
+        <section className="student-access-picker" aria-labelledby="access-type-heading">
+          <div>
+            <span className="student-access-picker__eyebrow">Choose login type</span>
+            <h1 id="access-type-heading">How would you like to continue?</h1>
+          </div>
+          <div className="student-access-picker__options" role="tablist" aria-label="Login type">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={accessMode === 'student'}
+              className={`student-access-option ${accessMode === 'student' ? 'student-access-option--active' : ''}`}
+              onClick={() => handleAccessModeChange('student')}
+            >
+              <span className="student-access-option__icon" aria-hidden="true">S</span>
+              <span>
+                <strong>Student Login</strong>
+                <small>Open your full profile, courses, certificates, counselling, and applications.</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={accessMode === 'buyer'}
+              className={`student-access-option ${accessMode === 'buyer' ? 'student-access-option--active' : ''}`}
+              onClick={() => handleAccessModeChange('buyer')}
+            >
+              <span className="student-access-option__icon student-access-option__icon--buyer" aria-hidden="true">B</span>
+              <span>
+                <strong>Ecommerce Buying</strong>
+                <small>Open a clean dashboard containing only your buying and delivery details.</small>
+              </span>
+            </button>
+          </div>
+        </section>
+
         <div className="student-auth-grid">
           <section className="student-auth-intro">
-            <p className="student-auth-intro__eyebrow">Student Login</p>
-            <h1>Sign in or create your classgain student account</h1>
+            <p className="student-auth-intro__eyebrow">
+              {accessMode === 'buyer' ? 'Ecommerce Buying Login' : 'Student Login'}
+            </p>
+            <h1>
+              {accessMode === 'buyer'
+                ? 'Sign in to see only your order details'
+                : 'Sign in or create your classgain student account'}
+            </h1>
             <p>
-              Keep your learning profile, certificates, achievements, and mentor messages in one place with a student
-              portal connected to the Express and MongoDB backend.
+              {accessMode === 'buyer'
+                ? 'Your buying dashboard keeps product, payment, delivery address, and live order status together on one focused page.'
+                : 'Keep your learning profile, certificates, achievements, and mentor messages in one place with a student portal connected to the Express and MongoDB backend.'}
             </p>
 
             <div className="student-auth-metrics">
               <article className="student-auth-metric">
-                <strong>4</strong>
-                <span>Learning sections</span>
+                <strong>{accessMode === 'buyer' ? '100%' : '4'}</strong>
+                <span>{accessMode === 'buyer' ? 'Order focused' : 'Learning sections'}</span>
               </article>
               <article className="student-auth-metric">
                 <strong>24/7</strong>
@@ -776,28 +844,40 @@ export default function LoginPage() {
               </article>
               <article className="student-auth-metric">
                 <strong>MongoDB</strong>
-                <span>Saved student data</span>
+                <span>{accessMode === 'buyer' ? 'Saved order data' : 'Saved student data'}</span>
               </article>
             </div>
 
             <div className="student-auth-highlights">
               <div className="student-auth-highlight">
-                <strong>Secure student API</strong>
-                <span>Sign-up and sign-in now save a real session for the dashboard.</span>
+                <strong>{accessMode === 'buyer' ? 'Private order access' : 'Secure student API'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'Only orders connected to your signed-in account are displayed.'
+                    : 'Sign-up and sign-in now save a real session for the dashboard.'}
+                </span>
               </div>
               <div className="student-auth-highlight">
-                <strong>Progress at a glance</strong>
-                <span>Track achievements, certificates, and mentor notes after login.</span>
+                <strong>{accessMode === 'buyer' ? 'Complete buying details' : 'Progress at a glance'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'Review products, totals, payment, delivery details, and tracking status.'
+                    : 'Track achievements, certificates, and mentor notes after login.'}
+                </span>
               </div>
               <div className="student-auth-highlight">
-                <strong>Simple next step</strong>
-                <span>Explore courses first, then return here when you want your personal portal.</span>
+                <strong>{accessMode === 'buyer' ? 'Clean order dashboard' : 'Simple next step'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'No student profile panels are shown in ecommerce buying mode.'
+                    : 'Explore courses first, then return here when you want your personal portal.'}
+                </span>
               </div>
             </div>
 
             <div className="dashboard-page__actions">
-              <Link to="/home" className="dashboard-page__button">
-                Explore School
+              <Link to={accessMode === 'buyer' ? '/ecommerce' : '/home'} className="dashboard-page__button">
+                {accessMode === 'buyer' ? 'Browse Products' : 'Explore School'}
               </Link>
               <Link to="/help-center" className="dashboard-page__button dashboard-page__button--ghost">
                 Need Help
@@ -806,7 +886,7 @@ export default function LoginPage() {
           </section>
 
           <section className="student-auth-card">
-            <div className="student-auth-card__toggle" role="tablist" aria-label="Student portal access mode">
+            <div className="student-auth-card__toggle" role="tablist" aria-label="Account action">
               <button
                 type="button"
                 className={authMode === 'signin' ? 'student-auth-card__toggle-button student-auth-card__toggle-button--active' : 'student-auth-card__toggle-button'}
@@ -824,12 +904,22 @@ export default function LoginPage() {
             </div>
 
             <form className="student-auth-form" onSubmit={handleSubmit}>
-              <p className="portal-form__eyebrow">Student Portal Access</p>
-              <h2>{authMode === 'signup' ? 'Create Student Account' : 'Welcome Back Student'}</h2>
+              <p className="portal-form__eyebrow">
+                {accessMode === 'buyer' ? 'Ecommerce Buying Access' : 'Student Portal Access'}
+              </p>
+              <h2>
+                {authMode === 'signup'
+                  ? accessMode === 'buyer' ? 'Create Buying Account' : 'Create Student Account'
+                  : accessMode === 'buyer' ? 'Welcome Back Buyer' : 'Welcome Back Student'}
+              </h2>
               <p className="student-auth-form__text">
                 {authMode === 'signup'
-                  ? 'Create your student profile so your learning dashboard can be saved in MongoDB.'
-                  : 'Sign in to open your dashboard and continue your learning progress.'}
+                  ? accessMode === 'buyer'
+                    ? 'Create an account to securely place purchases and track your orders.'
+                    : 'Create your student profile so your learning dashboard can be saved in MongoDB.'
+                  : accessMode === 'buyer'
+                    ? 'Sign in to open your order-only buying dashboard.'
+                    : 'Sign in to open your dashboard and continue your learning progress.'}
               </p>
 
               {authMode === 'signup' ? (

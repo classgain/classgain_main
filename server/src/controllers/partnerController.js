@@ -262,7 +262,7 @@ function buildWebsite(partner, profile) {
     return `www.${domain.replace(/^www\./, '')}`;
   }
 
-  return 'www.whatnextcampus.edu.in';
+  return 'www.classgain.in';
 }
 
 function buildRecentActivity(courses, scholarships, applications, images, videos) {
@@ -340,12 +340,12 @@ function buildDashboardPayload(partner, profile) {
     profile: {
       id: profile?._id ? String(profile._id) : 'demo-education-center',
       categoryKey: profile?.categoryKey || 'secondary',
-      centerName: profile?.educationCenterName || partner?.organizationName || 'What Next Education Center',
+      centerName: profile?.educationCenterName || partner?.organizationName || 'ClassGain Education Center',
       address: profile?.address || 'Update your center address from the education dashboard.',
       heroImage,
       logoImage,
       website: buildWebsite(partner, profile),
-      contactEmail: profile?.contactEmail || partner?.officialEmail || 'info@whatnextcampus.edu.in',
+      contactEmail: profile?.contactEmail || partner?.officialEmail || 'info@classgain.in',
       phone: profile?.phone || partner?.phone || '+91 98765 43210',
       description:
         profile?.description ||
@@ -360,7 +360,8 @@ function buildDashboardPayload(partner, profile) {
     images,
     videos,
     applications,
-    scholarships
+    scholarships,
+    centerDetails: profile?.centerDetails?.map((item) => ({ ...item })) || []
   };
 }
 
@@ -390,7 +391,7 @@ function createEducationCenterProfileSeed(partner, overrides = {}) {
     categoryKey: normalizedCategory.categoryKey,
     image: overrides.image || '',
     profileImage: overrides.profileImage || '',
-    educationCenterName: overrides.educationCenterName || partner?.organizationName || 'What Next Education Center',
+    educationCenterName: overrides.educationCenterName || partner?.organizationName || 'ClassGain Education Center',
     address: overrides.address || 'Update your center address from the education dashboard.',
     courseType: normalizedCategory.courseType,
     courseCount: courses.length,
@@ -405,7 +406,8 @@ function createEducationCenterProfileSeed(partner, overrides = {}) {
     scholarships,
     applications,
     galleryImages: createDefaultGalleryImages(overrides),
-    videoItems: createDefaultVideoItems(overrides)
+    videoItems: createDefaultVideoItems(overrides),
+    centerDetails: []
   };
 
   if (seedProfile.galleryImages[0]?.image && !seedProfile.image) {
@@ -1227,6 +1229,128 @@ export async function deleteEducationCenterScholarship(req, res) {
     return res.json({
       success: true,
       message: 'Scholarship deleted successfully.',
+      dashboard: buildDashboardPayload(partner, profile.toObject())
+    });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'partner_controller_failed');
+  }
+}
+
+export async function createEducationCenterDetail(req, res) {
+  try {
+    const partner = await resolveAuthenticatedPartner(req, res, educationCenterRole);
+
+    if (!partner) {
+      return undefined;
+    }
+
+    const label = normalizeOptionalText(req.body.label);
+    const value = normalizeOptionalText(req.body.value);
+
+    if (!label || !value) {
+      return res.status(400).json({
+        success: false,
+        message: 'Detail name and detail value are required.'
+      });
+    }
+
+    if (label.length > 100 || value.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Detail name must be under 100 characters and value under 1000 characters.'
+      });
+    }
+
+    const profile = await resolveEducationCenterProfileForPartner(partner);
+    const detail = {
+      id: createId('detail'),
+      label,
+      value
+    };
+
+    profile.centerDetails = [...(profile.centerDetails || []), detail];
+    await saveEducationCenterProfile(profile, partner);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Center detail added successfully.',
+      detail,
+      dashboard: buildDashboardPayload(partner, profile.toObject())
+    });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'partner_controller_failed');
+  }
+}
+
+export async function updateEducationCenterDetail(req, res) {
+  try {
+    const partner = await resolveAuthenticatedPartner(req, res, educationCenterRole);
+
+    if (!partner) {
+      return undefined;
+    }
+
+    const profile = await resolveEducationCenterProfileForPartner(partner);
+    const detailIndex = (profile.centerDetails || []).findIndex(
+      (detail) => detail.id === req.params.detailId
+    );
+
+    if (detailIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Center detail not found.' });
+    }
+
+    const currentDetail = profile.centerDetails[detailIndex];
+    const label = normalizeOptionalText(req.body.label, currentDetail.label);
+    const value = normalizeOptionalText(req.body.value, currentDetail.value);
+
+    if (label.length > 100 || value.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Detail name must be under 100 characters and value under 1000 characters.'
+      });
+    }
+
+    profile.centerDetails[detailIndex] = {
+      ...currentDetail,
+      label,
+      value
+    };
+    await saveEducationCenterProfile(profile, partner);
+
+    return res.json({
+      success: true,
+      message: 'Center detail updated successfully.',
+      detail: profile.centerDetails[detailIndex],
+      dashboard: buildDashboardPayload(partner, profile.toObject())
+    });
+  } catch (error) {
+    return sendInternalServerError(res, error, 'partner_controller_failed');
+  }
+}
+
+export async function deleteEducationCenterDetail(req, res) {
+  try {
+    const partner = await resolveAuthenticatedPartner(req, res, educationCenterRole);
+
+    if (!partner) {
+      return undefined;
+    }
+
+    const profile = await resolveEducationCenterProfileForPartner(partner);
+    const nextDetails = (profile.centerDetails || []).filter(
+      (detail) => detail.id !== req.params.detailId
+    );
+
+    if (nextDetails.length === (profile.centerDetails || []).length) {
+      return res.status(404).json({ success: false, message: 'Center detail not found.' });
+    }
+
+    profile.centerDetails = nextDetails;
+    await saveEducationCenterProfile(profile, partner);
+
+    return res.json({
+      success: true,
+      message: 'Center detail deleted successfully.',
       dashboard: buildDashboardPayload(partner, profile.toObject())
     });
   } catch (error) {

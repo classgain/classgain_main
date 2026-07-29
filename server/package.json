@@ -25,7 +25,7 @@
     "mongodb": "^7.2.0",
     "mongoose": "^8.23.0"
   },
-  "description": "What Next production API",
+  "description": "ClassGain production API",
   "main": "src/server.js",
   "keywords": [],
   "author": "",

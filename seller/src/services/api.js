@@ -300,6 +300,33 @@ export function deleteEducationCenterCourse(courseId, token) {
   });
 }
 
+export function createEducationCenterDetail(payload) {
+  const { token, ...requestBody } = payload;
+
+  return apiRequest('/partners/center-details', {
+    method: 'POST',
+    headers: buildPartnerHeaders(token),
+    body: JSON.stringify(requestBody)
+  });
+}
+
+export function updateEducationCenterDetail(detailId, payload) {
+  const { token, ...requestBody } = payload;
+
+  return apiRequest(`/partners/center-details/${encodeURIComponent(detailId)}`, {
+    method: 'PATCH',
+    headers: buildPartnerHeaders(token),
+    body: JSON.stringify(requestBody)
+  });
+}
+
+export function deleteEducationCenterDetail(detailId, token) {
+  return apiRequest(`/partners/center-details/${encodeURIComponent(detailId)}`, {
+    method: 'DELETE',
+    headers: buildPartnerHeaders(token)
+  });
+}
+
 export function createEducationCenterScholarship(payload) {
   const { token, ...requestBody } = payload;
 

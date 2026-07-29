@@ -61,7 +61,7 @@ const defaultMessages = [
 const defaultCompletedCourses = [
   {
     title: 'React Basics',
-    provider: 'What Next Academy',
+    provider: 'ClassGain Academy',
     status: 'Completed',
     dateLabel: 'May 2026',
     progress: 100
@@ -212,7 +212,7 @@ function buildStudentDashboard(user) {
     id: user?._id ? String(user._id) : 'demo-student',
     name: user?.name || 'Kavin',
     firstName,
-    email: user?.email || 'kavin@whatnext.app',
+    email: user?.email || 'kavin@classgain.app',
     role: 'Student',
     bio: user?.bio || defaultProfile.bio,
     tagline: user?.tagline || defaultProfile.tagline,
@@ -320,7 +320,7 @@ function normalizeCollectionItem(collection, body) {
   if (collection === 'completedCourses' || collection === 'currentStudies') {
     return {
       title: cleanText(body.title, 'Course update'),
-      provider: cleanText(body.provider, 'What Next'),
+      provider: cleanText(body.provider, 'ClassGain'),
       status: cleanText(body.status, collection === 'completedCourses' ? 'Completed' : 'Studying'),
       dateLabel: cleanText(body.dateLabel, nowLabel),
       progress: Number.isFinite(Number(body.progress)) ? Math.max(0, Math.min(100, Number(body.progress))) : 0
@@ -330,7 +330,7 @@ function normalizeCollectionItem(collection, body) {
   if (collection === 'friends' || collection === 'friendSuggestions') {
     return {
       name: cleanText(body.name, 'New Friend'),
-      handle: cleanText(body.handle, '@whatnext.friend'),
+      handle: cleanText(body.handle, '@classgain.friend'),
       avatarUrl: cleanText(body.avatarUrl),
       relation: cleanText(body.relation, collection === 'friends' ? 'following' : 'suggested')
     };

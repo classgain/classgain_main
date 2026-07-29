@@ -117,7 +117,7 @@ export default function EducationCenterHelpPage() {
       <section className="dashboard-page__hero">
         <div>
           <p className="dashboard-page__eyebrow">Education Center Help</p>
-          <h1 className="dashboard-page__title">Send a support ticket to What Next.</h1>
+          <h1 className="dashboard-page__title">Send a support ticket to ClassGain.</h1>
           <p className="dashboard-page__text">
             Share your center details, issue category, and full notes. The support team can track the request by ticket
             ID after submission.

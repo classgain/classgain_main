@@ -214,12 +214,22 @@ function buildActivity(item, profile) {
 
 function buildStats(item, courses, profile) {
   const applicationsCount = profile?.applications?.length || 0;
+  const centerDetails = profile?.centerDetails || [];
+  const findDetailValue = (...labels) => {
+    const normalizedLabels = labels.map((label) => label.toLowerCase());
+    return centerDetails.find((detail) => {
+      const detailLabel = normalizeText(detail.label).toLowerCase();
+      return normalizedLabels.some((label) => detailLabel === label || detailLabel.includes(label));
+    })?.value;
+  };
 
   return {
-    students: applicationsCount > 0 ? `${Math.max(applicationsCount * 250, 500)}+` : '6000+',
+    students:
+      findDetailValue('students studying', 'student strength', 'total students', 'student count') ||
+      (applicationsCount > 0 ? `${Math.max(applicationsCount * 250, 500)}+` : '6000+'),
     faculty: `${Math.max(courses.length * 12, 25)}+`,
     courses: `${item.courseCount || courses.length}+`,
-    placementRate: '95%'
+    placementRate: findDetailValue('placement rate') || '95%'
   };
 }
 
@@ -422,6 +432,7 @@ export async function getEducationDetails(req, res, next) {
         scholarships,
         activity,
         videos,
+        centerDetails: profile?.centerDetails || [],
         stats: buildStats(item, courses, profile)
       }
     });

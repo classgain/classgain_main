@@ -43,8 +43,8 @@ export default function AppShell() {
         <Navbar expand="lg" className="top-navbar py-3">
           <Container fluid="xl">
             <Navbar.Brand as={NavLink} to="/home" className="brand-mark">
-              <span className="brand-mark__text">What</span>
-              <span className="brand-mark__badge">Next</span>
+              <span className="brand-mark__text">Class</span>
+              <span className="brand-mark__badge">Gain</span>
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="top-nav" className="border-0 shadow-none" />
             <Navbar.Collapse id="top-nav" className="justify-content-end">

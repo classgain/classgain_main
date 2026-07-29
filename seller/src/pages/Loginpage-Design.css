@@ -1947,3 +1947,122 @@
     height: 210px;
   }
 }
+
+.center-detail-form__grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr);
+  gap: 1rem;
+}
+
+.center-detail-form .portal-form__field span {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.center-detail-form input,
+.center-detail-form textarea {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  outline: none;
+  resize: vertical;
+}
+
+.center-detail-form input::placeholder,
+.center-detail-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.center-detail-form input:focus,
+.center-detail-form textarea:focus {
+  border-color: #62aaf7;
+  box-shadow: 0 0 0 4px rgba(98, 170, 247, 0.12);
+}
+
+.center-detail-form__actions {
+  gap: 0.75rem;
+}
+
+.center-detail-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.center-detail-dashboard-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.center-detail-dashboard-card__number {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(31, 105, 181, 0.24);
+  color: #97c3ff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.center-detail-dashboard-card h3 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.center-detail-dashboard-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.center-detail-dashboard-card__actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.center-detail-dashboard-card__actions button {
+  padding: 0.48rem 0.7rem;
+  border: 0;
+  border-radius: 9px;
+  background: #1f69b5;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.center-detail-dashboard-empty {
+  padding: 1.5rem;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .center-detail-form__grid,
+  .center-detail-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .center-detail-dashboard-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .center-detail-dashboard-card__actions {
+    grid-column: 1 / -1;
+  }
+}

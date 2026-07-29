@@ -321,7 +321,7 @@ app.get('/', (_req, res) => {
   res.status(200).json({
     ok: true,
     service: 'what-next-server',
-    message: 'What Next API is running.',
+    message: 'ClassGain API is running.',
     database: databaseConnected ? 'connected' : 'disconnected',
     endpoints: {
       health: '/api/health',

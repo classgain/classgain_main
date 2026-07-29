@@ -7,10 +7,12 @@ import galleryImageTwo from '../assets/college2.png';
 import galleryImageThree from '../assets/college3.png';
 import {
   createEducationCenterCourse,
+  createEducationCenterDetail,
   createEducationCenterGalleryImage,
   createEducationCenterScholarship,
   createEducationCenterVideo,
   deleteEducationCenterCourse,
+  deleteEducationCenterDetail,
   deleteEducationCenterGalleryImage,
   deleteEducationCenterScholarship,
   deleteEducationCenterVideo,
@@ -18,6 +20,7 @@ import {
   loginEducationCenter,
   updateEducationCenterApplication,
   updateEducationCenterCourse,
+  updateEducationCenterDetail,
   updateEducationCenterScholarship
 } from '../services/api';
 
@@ -36,6 +39,7 @@ const publicSiteUrl = (import.meta.env.VITE_CLIENT_URL || '/').replace(/\/$/, ''
 const sidebarLinks = [
   { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
   { key: 'profile', label: 'College Profile', icon: 'profile' },
+  { key: 'details', label: 'Center Details', icon: 'details' },
   { key: 'courses', label: 'Manage Courses', icon: 'courses' },
   { key: 'scholarships', label: 'Manage Scholarships', icon: 'scholarships' },
   { key: 'applications', label: 'Student Applications', icon: 'applications' },
@@ -159,6 +163,25 @@ const initialCourseForm = {
   fee: ''
 };
 
+const initialCenterDetailForm = {
+  label: '',
+  value: ''
+};
+
+const centerDetailSuggestions = [
+  'Students Studying',
+  'Transport Buses',
+  'Transport Coverage',
+  'Ladies Hostel',
+  'Gents Hostel',
+  'Sports Details',
+  'Extracurricular Activities',
+  'Education Speciality',
+  'Placement Rate',
+  'Students Placed',
+  'Achiever Student Details'
+];
+
 const initialScholarshipForm = {
   name: '',
   type: '',
@@ -216,6 +239,12 @@ function DashboardIcon({ name }) {
         <path d="M12 4 4 8l8 4 8-4-8-4Z" />
         <path d="M7 10v4.5A7.5 7.5 0 0 0 12 17a7.5 7.5 0 0 0 5-2.5V10" />
         <path d="M10 17v4l2-1.5 2 1.5v-4" />
+      </>
+    ),
+    details: (
+      <>
+        <path d="M5 5h14v14H5Z" />
+        <path d="M8 9h8M8 13h8M8 17h5" />
       </>
     ),
     applications: (
@@ -291,7 +320,8 @@ function normalizeDashboardData(dashboard) {
       images: fallbackImages,
       videos: fallbackVideos,
       applications: fallbackApplications,
-      scholarships: fallbackScholarships
+      scholarships: fallbackScholarships,
+      centerDetails: []
     };
   }
 
@@ -333,7 +363,8 @@ function normalizeDashboardData(dashboard) {
     images,
     videos,
     applications: dashboard.applications?.length ? dashboard.applications : fallbackApplications,
-    scholarships: dashboard.scholarships?.length ? dashboard.scholarships : fallbackScholarships
+    scholarships: dashboard.scholarships?.length ? dashboard.scholarships : fallbackScholarships,
+    centerDetails: dashboard.centerDetails || []
   };
 }
 
@@ -357,6 +388,8 @@ export default function EducationCenterLoginPage() {
   const [applicationNotesDraft, setApplicationNotesDraft] = useState('');
   const [applicationReplyDraft, setApplicationReplyDraft] = useState('');
   const [courseForm, setCourseForm] = useState(initialCourseForm);
+  const [centerDetailForm, setCenterDetailForm] = useState(initialCenterDetailForm);
+  const [editingCenterDetailId, setEditingCenterDetailId] = useState('');
   const [scholarshipForm, setScholarshipForm] = useState(initialScholarshipForm);
   const [imageForm, setImageForm] = useState(initialImageForm);
   const [videoForm, setVideoForm] = useState(initialVideoForm);
@@ -372,6 +405,7 @@ export default function EducationCenterLoginPage() {
 
   const dashboardRef = useRef(null);
   const profileRef = useRef(null);
+  const detailsRef = useRef(null);
   const coursesRef = useRef(null);
   const scholarshipsRef = useRef(null);
   const applicationsRef = useRef(null);
@@ -461,6 +495,7 @@ export default function EducationCenterLoginPage() {
   const sectionRefs = {
     dashboard: dashboardRef,
     profile: profileRef,
+    details: detailsRef,
     courses: coursesRef,
     scholarships: scholarshipsRef,
     applications: applicationsRef,
@@ -599,6 +634,11 @@ export default function EducationCenterLoginPage() {
     setCourseForm((current) => ({ ...current, [name]: value }));
   };
 
+  const handleCenterDetailFormChange = (event) => {
+    const { name, value } = event.target;
+    setCenterDetailForm((current) => ({ ...current, [name]: value }));
+  };
+
   const handleScholarshipFormChange = (event) => {
     const { name, value } = event.target;
     setScholarshipForm((current) => ({ ...current, [name]: value }));
@@ -675,6 +715,54 @@ export default function EducationCenterLoginPage() {
           ...courseForm
         }),
       () => setCourseForm(initialCourseForm)
+    );
+  };
+
+  const resetCenterDetailForm = () => {
+    setCenterDetailForm(initialCenterDetailForm);
+    setEditingCenterDetailId('');
+  };
+
+  const handleCenterDetailSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!centerDetailForm.label.trim() || !centerDetailForm.value.trim()) {
+      setStatus({ type: 'error', message: 'Please enter both the detail name and detail value.' });
+      return;
+    }
+
+    const action = editingCenterDetailId
+      ? () => updateEducationCenterDetail(editingCenterDetailId, {
+          token: session.token,
+          ...centerDetailForm
+        })
+      : () => createEducationCenterDetail({
+          token: session.token,
+          ...centerDetailForm
+        });
+
+    await runDashboardAction(
+      editingCenterDetailId ? 'detail-update' : 'detail-create',
+      action,
+      resetCenterDetailForm
+    );
+  };
+
+  const handleCenterDetailEdit = (detail) => {
+    setEditingCenterDetailId(detail.id);
+    setCenterDetailForm({
+      label: detail.label || '',
+      value: detail.value || ''
+    });
+    setSelectedNav('details');
+    detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleCenterDetailDelete = async (detailId) => {
+    await runDashboardAction(
+      'detail-delete',
+      () => deleteEducationCenterDetail(detailId, session.token),
+      editingCenterDetailId === detailId ? resetCenterDetailForm : undefined
     );
   };
 
@@ -1081,6 +1169,101 @@ export default function EducationCenterLoginPage() {
               </div>
             </aside>
           </div>
+
+          <section className="education-panel education-center-details-panel" ref={detailsRef}>
+            <div className="education-panel__header">
+              <div>
+                <h2>Center Details</h2>
+                <span className="education-panel__helper">
+                  Add student strength, transport, hostel, sports, speciality, placement, and achievement details.
+                </span>
+              </div>
+            </div>
+
+            <form className="education-quick-form center-detail-form" onSubmit={handleCenterDetailSubmit}>
+              <div className="center-detail-form__grid">
+                <label className="portal-form__field">
+                  <span>Which detail or speciality do you want to add?</span>
+                  <input
+                    type="text"
+                    name="label"
+                    list="center-detail-suggestions"
+                    maxLength="100"
+                    value={centerDetailForm.label}
+                    onChange={handleCenterDetailFormChange}
+                    placeholder="Example: Education Speciality"
+                  />
+                  <datalist id="center-detail-suggestions">
+                    {centerDetailSuggestions.map((suggestion) => (
+                      <option value={suggestion} key={suggestion} />
+                    ))}
+                  </datalist>
+                </label>
+
+                <label className="portal-form__field">
+                  <span>Detail value</span>
+                  <textarea
+                    name="value"
+                    maxLength="1000"
+                    rows="3"
+                    value={centerDetailForm.value}
+                    onChange={handleCenterDetailFormChange}
+                    placeholder="Example: Artificial Intelligence, Robotics, and Data Science"
+                  />
+                </label>
+              </div>
+
+              <div className="education-quick-form__actions center-detail-form__actions">
+                <button
+                  type="submit"
+                  className="education-panel__button education-panel__button--solid"
+                  disabled={busyAction === 'detail-create' || busyAction === 'detail-update'}
+                >
+                  {busyAction === 'detail-create'
+                    ? 'Adding...'
+                    : busyAction === 'detail-update'
+                      ? 'Saving...'
+                      : editingCenterDetailId
+                        ? 'Save Changes'
+                        : 'Create Detail'}
+                </button>
+                {editingCenterDetailId ? (
+                  <button type="button" className="education-panel__button" onClick={resetCenterDetailForm}>
+                    Cancel Edit
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {resolvedDashboard.centerDetails.length ? (
+              <div className="center-detail-dashboard-grid">
+                {resolvedDashboard.centerDetails.map((detail, index) => (
+                  <article className="center-detail-dashboard-card" key={detail.id}>
+                    <span className="center-detail-dashboard-card__number">{String(index + 1).padStart(2, '0')}</span>
+                    <div>
+                      <h3>{detail.label}</h3>
+                      <p>{detail.value}</p>
+                    </div>
+                    <div className="center-detail-dashboard-card__actions">
+                      <button type="button" onClick={() => handleCenterDetailEdit(detail)}>Edit</button>
+                      <button
+                        type="button"
+                        className="education-table__danger"
+                        onClick={() => handleCenterDetailDelete(detail.id)}
+                        disabled={busyAction === 'detail-delete'}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="center-detail-dashboard-empty">
+                No center details added yet. Use the two fields above to publish your first detail.
+              </div>
+            )}
+          </section>
 
           <section className="education-panel" ref={coursesRef}>
             <div className="education-panel__header">

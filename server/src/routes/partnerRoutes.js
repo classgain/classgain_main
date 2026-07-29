@@ -1,12 +1,14 @@
 import express from 'express';
 import {
   createEducationCenterCourse,
+  createEducationCenterDetail,
   createEducationCenterGalleryImage,
   createEducationCenterProfile,
   createEducationCenterScholarship,
   createEducationCenterVideo,
   createVideoChannelProfile,
   deleteEducationCenterCourse,
+  deleteEducationCenterDetail,
   deleteEducationCenterGalleryImage,
   deleteEducationCenterScholarship,
   deleteEducationCenterVideo,
@@ -15,6 +17,7 @@ import {
   registerPartner,
   updateEducationCenterApplication,
   updateEducationCenterCourse,
+  updateEducationCenterDetail,
   updateEducationCenterScholarship
 } from '../controllers/partnerController.js';
 
@@ -28,6 +31,9 @@ router.post('/video-channel', createVideoChannelProfile);
 router.post('/courses', createEducationCenterCourse);
 router.patch('/courses/:courseId', updateEducationCenterCourse);
 router.delete('/courses/:courseId', deleteEducationCenterCourse);
+router.post('/center-details', createEducationCenterDetail);
+router.patch('/center-details/:detailId', updateEducationCenterDetail);
+router.delete('/center-details/:detailId', deleteEducationCenterDetail);
 router.post('/scholarships', createEducationCenterScholarship);
 router.patch('/scholarships/:scholarshipId', updateEducationCenterScholarship);
 router.delete('/scholarships/:scholarshipId', deleteEducationCenterScholarship);
