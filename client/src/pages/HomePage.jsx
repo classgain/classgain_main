@@ -25,7 +25,7 @@ export default function HomePage({ categories }) {
             <h1 className="home-hero__title">class-Gain education centers in one place.</h1>
             <p className="home-hero__text">
               Browse school, college, and coaching center cards, then open each profile for full course, activity,
-              video, address, and scholarship details.
+          , address, and scholarship details.
             </p>
            
           </div>

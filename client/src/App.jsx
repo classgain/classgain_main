@@ -6,6 +6,7 @@ const CounsellingPage = lazy(() => import('./pages/CounsellingPage'));
 const EducationCenterLoginPage = lazy(() => import('./pages/EducationCenterLoginPage'));
 const HelpCenterPage = lazy(() => import('./pages/HelpCenterPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const EcommerceLoginPage = lazy(() => import('./pages/EcommerceLoginPage'));
 const VideoEducationPage = lazy(() => import('./pages/VideoEducationPage'));
 const EducationDetailsPage = lazy(() => import('./pages/EducationDetailsPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -96,6 +97,7 @@ export default function App() {
         <Route path="help-center" element={<HelpCenterPage />} />
         <Route path="education-center-login" element={<EducationCenterLoginPage />} />
         <Route path="student-login" element={<LoginPage />} />
+        <Route path="ecommerce-login" element={<EcommerceLoginPage />} />
         <Route path="video-education" element={<VideoEducationPage />} />
         <Route path="ecommerce" element={<EcommerceHomePage />} />
         <Route path="ecommerce-orders" element={<EcommerceOrderPage />} />
