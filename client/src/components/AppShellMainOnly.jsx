@@ -7,9 +7,15 @@ import SearchRibbon from './SearchRibbon';
 const baseTopLinks = [
   { label: 'Help', to: '/help-center' },
   { label: 'Counselling', to: '/counselling' },
-  { label: 'Education Center Login', to: '/education-center-login' },
-  { label: 'Student Login', to: '/student-login' },
-  { label: 'Ecommerce Buying Login', to: '/ecommerce-login' }
+  { label: 'Buying Orders', to: '/buyer-orders' }
+];
+
+const orderTopLinks = [
+  { label: 'Buying Orders', to: '/buyer-orders' }
+];
+
+const accountTopLinks = [
+  { label: 'Student Login', to: '/student-login' }
 ];
 
 const bottomLinks = [
@@ -35,7 +41,9 @@ export default function AppShellMainOnly() {
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
   const lastScrollYRef = useRef(0);
 
-  const topLinks = baseTopLinks;
+  const topLinks = location.pathname.startsWith('/ecommerce-orders')
+    ? [...baseTopLinks.slice(0, 2), ...orderTopLinks, ...accountTopLinks]
+    : [...baseTopLinks, ...accountTopLinks];
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const showSearchRibbon = searchEnabledPaths.has(normalizedPath);
 

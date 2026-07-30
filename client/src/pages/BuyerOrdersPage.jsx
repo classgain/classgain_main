@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import SafeImage from '../components/SafeImage';
 import { fetchMyOrders } from '../services/api';
-import { clearBuyerSession, readBuyerSession } from '../services/buyerSession';
+import { readStudentSession } from '../services/studentSession';
 import './BuyerOrdersPage.css';
 
 const ORDER_STEPS = ['Order Confirmed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
+const SESSION_KEY = 'what-next-student-session-v1';
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-IN', {
@@ -28,7 +29,7 @@ function formatDate(value) {
 
 export default function BuyerOrdersPage() {
   const navigate = useNavigate();
-  const session = useMemo(() => readBuyerSession(), []);
+  const session = useMemo(() => readStudentSession(), []);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(Boolean(session?.token));
   const [error, setError] = useState('');
@@ -57,9 +58,9 @@ export default function BuyerOrdersPage() {
   if (!session?.token) {
     return (
       <Navigate
-        to="/ecommerce-login"
+        to="/student-login"
         replace
-        state={{ message: 'Please use Ecommerce Buying Login to view your order dashboard.' }}
+        state={{ accessMode: 'buyer', message: 'Please use Ecommerce Buying login to view your order dashboard.' }}
       />
     );
   }
@@ -70,10 +71,10 @@ export default function BuyerOrdersPage() {
   const activeOrders = orders.filter((order) => !['Delivered', 'Cancelled'].includes(order.orderStatus)).length;
 
   const handleLogout = () => {
-    clearBuyerSession();
-    navigate('/ecommerce-login', {
+    window.localStorage.removeItem(SESSION_KEY);
+    navigate('/student-login', {
       replace: true,
-      state: { message: 'You have been signed out of Ecommerce Buying.' }
+      state: { accessMode: 'buyer', message: 'You have been signed out of Ecommerce Buying.' }
     });
   };
 
@@ -98,7 +99,7 @@ export default function BuyerOrdersPage() {
       <div className="buyer-dashboard__content">
         <section className="buyer-dashboard__hero">
           <div>
-            <span className="buyer-dashboard__eyebrow">Parent &amp; Ecommerce Buying Dashboard</span>
+            <span className="buyer-dashboard__eyebrow">Ecommerce Buying Dashboard</span>
             <h1>Your order details</h1>
             <p>Only your products, payment details, delivery information, and tracking status are shown here.</p>
           </div>

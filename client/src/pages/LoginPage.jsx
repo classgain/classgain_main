@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   createStudentDashboardItem,
   deleteStudentDashboardItem,
   fetchMyCounselling,
   fetchNotifications,
+  fetchMyOrders,
   fetchStudentDashboard,
   loginStudent,
   signupStudent,
@@ -25,6 +26,7 @@ const studentSidebarLinks = [
   { key: 'stories', label: 'Stories', icon: 'story' },
   { key: 'applications', label: 'Apply Status', icon: 'application' },
   { key: 'counselling', label: 'Counselling & Notifications', icon: 'message' }
+  ,{ key: 'orders', label: 'Your Orders', icon: 'application' }
 ];
 
 function StudentCounsellingDashboard({ token, refreshKey }) {
@@ -328,8 +330,21 @@ function buildStudentSession(responseData) {
   return { token, user };
 }
 
+function StudentOrders({ token }) {
+  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  useEffect(()=>{fetchMyOrders(token).then(data=>setItems(data.items||[])).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[token]);
+  const steps=['Order Confirmed','Packed','Shipped','Out for Delivery','Delivered']; const origin=API.replace(/\/api$/,'');
+  if(loading)return <p>Loading your orders...</p>; if(error)return <div className="dashboard-page__status dashboard-page__status--error">{error}</div>;
+  if(!items.length)return <div className="student-orders-empty"><p>You have not placed an order yet.</p><Link to="/ecommerce" className="dashboard-page__button">Shop Products</Link></div>;
+  return <div className="student-order-list">{items.map(order=>{const active=steps.indexOf(order.orderStatus);return <article className="student-order-card" key={order._id}><img src={/^(https?:|data:)/i.test(order.productImage || '')?order.productImage:`${origin}${order.productImage}`} alt={order.productName}/><div><span>Order {order.orderNumber}</span><h3>{order.productName}</h3><p>{order.quantity} × Rs. {order.unitPrice} · {order.paymentMode} · Payment {order.paymentStatus}</p><strong>Rs. {order.totalAmount}</strong></div><b>{order.orderStatus}</b><div className="student-order-track">{steps.map((step,index)=><span className={index<=active?'active':''} key={step}>{step}</span>)}</div></article>})}</div>;
+}
+
 export default function LoginPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [accessMode, setAccessMode] = useState(() => (
+    location.state?.accessMode === 'buyer' || location.state?.panel === 'orders' ? 'buyer' : 'student'
+  ));
   const [authMode, setAuthMode] = useState('signin');
   const [authForm, setAuthForm] = useState(initialAuthForm);
   const [session, setSession] = useState(() => readStoredStudentSession());
@@ -361,8 +376,15 @@ export default function LoginPage() {
   const storiesRef = useRef(null);
   const applicationsRef = useRef(null);
   const counsellingRef = useRef(null);
+  const ordersRef = useRef(null);
 
   const resolvedStudent = useMemo(() => normalizeStudentData(student), [student]);
+
+  useEffect(() => {
+    if (session?.token && accessMode === 'buyer') {
+      navigate('/buyer-orders', { replace: true });
+    }
+  }, [accessMode, navigate, session?.token]);
 
   useEffect(() => {
     let isMounted = true;
@@ -437,6 +459,7 @@ export default function LoginPage() {
     stories: storiesRef,
     applications: applicationsRef,
     counselling: counsellingRef
+    ,orders: ordersRef
   };
 
   const handlePanelSelect = (key) => {
@@ -653,6 +676,17 @@ export default function LoginPage() {
     setStatus({ type: '', message: '' });
   };
 
+  const handleAccessModeChange = (mode) => {
+    setAccessMode(mode);
+    setAuthMode('signin');
+    setAuthForm(initialAuthForm);
+    setStatus({ type: '', message: '' });
+
+    if (mode === 'buyer' && session?.token) {
+      navigate('/buyer-orders');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatus({ type: '', message: '' });
@@ -715,6 +749,9 @@ export default function LoginPage() {
           : 'Signed in successfully. Loading your student dashboard.'
       });
 
+      if (accessMode === 'buyer') {
+        navigate('/buyer-orders', { replace: true });
+      }
     } catch (error) {
       setStatus({ type: 'error', message: error.message || 'Unable to complete the request right now.' });
     } finally {
@@ -727,6 +764,7 @@ export default function LoginPage() {
     setSession(null);
     setStudent(null);
     setSelectedPanel('profile');
+    setAccessMode('student');
     setAuthMode('signin');
     setAuthForm(initialAuthForm);
     setStatus({
@@ -744,18 +782,61 @@ export default function LoginPage() {
           <div className={`dashboard-page__status dashboard-page__status--${statusTone}`}>{status.message}</div>
         ) : null}
 
+        <section className="student-access-picker" aria-labelledby="access-type-heading">
+          <div>
+            <span className="student-access-picker__eyebrow">Choose login type</span>
+            <h1 id="access-type-heading">How would you like to continue?</h1>
+          </div>
+          <div className="student-access-picker__options" role="tablist" aria-label="Login type">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={accessMode === 'student'}
+              className={`student-access-option ${accessMode === 'student' ? 'student-access-option--active' : ''}`}
+              onClick={() => handleAccessModeChange('student')}
+            >
+              <span className="student-access-option__icon" aria-hidden="true">S</span>
+              <span>
+                <strong>Student Login</strong>
+                <small>Open your full profile, courses, certificates, counselling, and applications.</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={accessMode === 'buyer'}
+              className={`student-access-option ${accessMode === 'buyer' ? 'student-access-option--active' : ''}`}
+              onClick={() => handleAccessModeChange('buyer')}
+            >
+              <span className="student-access-option__icon student-access-option__icon--buyer" aria-hidden="true">B</span>
+              <span>
+                <strong>Ecommerce Buying</strong>
+                <small>Open a clean dashboard containing only your buying and delivery details.</small>
+              </span>
+            </button>
+          </div>
+        </section>
+
         <div className="student-auth-grid">
           <section className="student-auth-intro">
-            <p className="student-auth-intro__eyebrow">Student Login</p>
-            <h1>Sign in or create your ClassGain student account</h1>
+            <p className="student-auth-intro__eyebrow">
+              {accessMode === 'buyer' ? 'Ecommerce Buying Login' : 'Student Login'}
+            </p>
+            <h1>
+              {accessMode === 'buyer'
+                ? 'Sign in to see only your order details'
+                : 'Sign in or create your classgain student account'}
+            </h1>
             <p>
-              Keep your learning profile, certificates, achievements, and mentor messages in one place with a student portal connected to the Express and MongoDB backend.
+              {accessMode === 'buyer'
+                ? 'Your buying dashboard keeps product, payment, delivery address, and live order status together on one focused page.'
+                : 'Keep your learning profile, certificates, achievements, and mentor messages in one place with a student portal connected to the Express and MongoDB backend.'}
             </p>
 
             <div className="student-auth-metrics">
               <article className="student-auth-metric">
-                <strong>4</strong>
-                <span>Learning sections</span>
+                <strong>{accessMode === 'buyer' ? '100%' : '4'}</strong>
+                <span>{accessMode === 'buyer' ? 'Order focused' : 'Learning sections'}</span>
               </article>
               <article className="student-auth-metric">
                 <strong>24/7</strong>
@@ -763,29 +844,43 @@ export default function LoginPage() {
               </article>
               <article className="student-auth-metric">
                 <strong>MongoDB</strong>
-                <span>Saved student data</span>
+                <span>{accessMode === 'buyer' ? 'Saved order data' : 'Saved student data'}</span>
               </article>
             </div>
 
             <div className="student-auth-highlights">
               <div className="student-auth-highlight">
-                <strong>Secure student API</strong>
-                <span>Sign-up and sign-in save a real session for the education dashboard.</span>
+                <strong>{accessMode === 'buyer' ? 'Private order access' : 'Secure student API'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'Only orders connected to your signed-in account are displayed.'
+                    : 'Sign-up and sign-in now save a real session for the dashboard.'}
+                </span>
               </div>
               <div className="student-auth-highlight">
-                <strong>Progress at a glance</strong>
-                <span>Track achievements, certificates, and mentor notes after login.</span>
+                <strong>{accessMode === 'buyer' ? 'Complete buying details' : 'Progress at a glance'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'Review products, totals, payment, delivery details, and tracking status.'
+                    : 'Track achievements, certificates, and mentor notes after login.'}
+                </span>
               </div>
               <div className="student-auth-highlight">
-                <strong>Education applications</strong>
-                <span>Apply to education centers and follow counselling updates from your student account.</span>
+                <strong>{accessMode === 'buyer' ? 'Clean order dashboard' : 'Simple next step'}</strong>
+                <span>
+                  {accessMode === 'buyer'
+                    ? 'No student profile panels are shown in ecommerce buying mode.'
+                    : 'Explore courses first, then return here when you want your personal portal.'}
+                </span>
               </div>
             </div>
 
             <div className="dashboard-page__actions">
-              <Link to="/home" className="dashboard-page__button">Explore School</Link>
-              <Link to="/ecommerce-login" className="dashboard-page__button dashboard-page__button--ghost">
-                Ecommerce Buying Login
+              <Link to={accessMode === 'buyer' ? '/ecommerce' : '/home'} className="dashboard-page__button">
+                {accessMode === 'buyer' ? 'Browse Products' : 'Explore School'}
+              </Link>
+              <Link to="/help-center" className="dashboard-page__button dashboard-page__button--ghost">
+                Need Help
               </Link>
             </div>
           </section>
@@ -809,16 +904,22 @@ export default function LoginPage() {
             </div>
 
             <form className="student-auth-form" onSubmit={handleSubmit}>
-              <p className="portal-form__eyebrow">Student Portal Access</p>
+              <p className="portal-form__eyebrow">
+                {accessMode === 'buyer' ? 'Ecommerce Buying Access' : 'Student Portal Access'}
+              </p>
               <h2>
                 {authMode === 'signup'
-                  ? 'Create Student Account'
-                  : 'Welcome Back Student'}
+                  ? accessMode === 'buyer' ? 'Create Buying Account' : 'Create Student Account'
+                  : accessMode === 'buyer' ? 'Welcome Back Buyer' : 'Welcome Back Student'}
               </h2>
               <p className="student-auth-form__text">
                 {authMode === 'signup'
-                  ? 'Create your student profile so your learning dashboard can be saved in MongoDB.'
-                  : 'Sign in to open your dashboard and continue your learning progress.'}
+                  ? accessMode === 'buyer'
+                    ? 'Create an account to securely place purchases and track your orders.'
+                    : 'Create your student profile so your learning dashboard can be saved in MongoDB.'
+                  : accessMode === 'buyer'
+                    ? 'Sign in to open your order-only buying dashboard.'
+                    : 'Sign in to open your dashboard and continue your learning progress.'}
               </p>
 
               {authMode === 'signup' ? (
@@ -1279,6 +1380,11 @@ export default function LoginPage() {
             <div className="student-panel__header"><h2>Counselling Resolution Center</h2><button type="button" onClick={() => setCounsellingRefreshKey((value) => value + 1)}>Refresh details</button></div>
             <p>Track counselling progress, resolved problems, counsellor replies, and notifications from one place.</p>
             <StudentCounsellingDashboard token={session.token} refreshKey={counsellingRefreshKey} />
+          </section>
+          <section className="student-panel" ref={ordersRef}>
+            <div className="student-panel__header"><h2>Your Orders</h2><Link to="/ecommerce">Buy Products</Link></div>
+            <p>Check payment details and delivery status for every ecommerce order.</p>
+            <StudentOrders token={session.token}/>
           </section>
         </div>
       </div>
