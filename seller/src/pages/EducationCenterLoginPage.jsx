@@ -830,7 +830,7 @@ export default function EducationCenterLoginPage() {
   };
 
   const handleCourseStatusToggle = async (course) => {
-    await runDashboardAction('course-status', () =>
+    await runDashboardAction(`course-status-${course.id}`, () =>
       updateEducationCenterCourse(course.id, {
         token: session.token,
         status: course.status === 'Active' ? 'Inactive' : 'Active'
@@ -1356,7 +1356,17 @@ export default function EducationCenterLoginPage() {
                       </td>
                       <td>
                         <div className="education-table__actions">
-                          <label className="course-status-switch"><input type="checkbox" checked={course.status === 'Active'} onChange={() => handleCourseStatusToggle(course)} disabled={busyAction === 'course-status'}/><span className="course-status-switch__track"/><b>{course.status}</b></label>
+                          <label className="course-status-switch">
+                            <input
+                              type="checkbox"
+                              checked={course.status === 'Active'}
+                              onChange={() => handleCourseStatusToggle(course)}
+                              disabled={busyAction === `course-status-${course.id}`}
+                              aria-label={`${course.status === 'Active' ? 'Inactivate' : 'Activate'} ${course.name}`}
+                            />
+                            <span className="course-status-switch__track" />
+                            <b>{busyAction === `course-status-${course.id}` ? 'Saving...' : course.status}</b>
+                          </label>
                           <button type="button" className="education-table__danger" onClick={() => handleCourseDelete(course.id)}>
                             Delete
                           </button>

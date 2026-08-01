@@ -3,7 +3,7 @@ import { Container, Modal, Spinner } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { fetchProducts, fetchProductsByCategory } from '../services/api';
 import { resolveMediaUrls } from '../services/mediaUrl';
-
+import {Helmet} from "react-helmet-async";
 const categories = ['Writing Things', 'Books & Notes', 'Electronics', 'Toys', 'Story Books', 'School Bags'];
 function productImages(product) {
   const images = Array.isArray(product?.images) ? product.images : [];
@@ -24,6 +24,17 @@ function ProductDetailsModal({ product, onClose, onAddToCart }) {
   if (!product) return null;
 
   return (
+    <>
+    <helmet>
+      <title>{product.name} - Student Store</title>
+       <meta
+      name="description"
+      content="education essential including SHOP QUALITY,bags,notebooks,stationery,pens,drawing books,
+      learning toys,electronics accesseries,and other study products at [affordable prices with discounts on trusted brands],
+      secure ordering and fast delivery........"
+    />
+    </helmet>
+
     <Modal show onHide={onClose} size="xl" centered dialogClassName="product-detail-modal">
       <Modal.Header closeButton><Modal.Title>{product.name}</Modal.Title></Modal.Header>
       <Modal.Body>
@@ -56,6 +67,7 @@ function ProductDetailsModal({ product, onClose, onAddToCart }) {
         </div>
       </Modal.Body>
     </Modal>
+    </>
   );
 }
 
@@ -94,13 +106,13 @@ export default function EcommerceHomePage() {
     <div className="shop-page">
       <section className="shop-hero"><Container fluid="xl"><div className="shop-hero__content"><span className="home-hero__label">Student Store</span><h1>Everything students need, in one place.</h1><p>Click a product to view every photo and complete a secure checkout.</p></div><aside className="shop-cart-summary"><span>Cart Items</span><strong>{cart.length}</strong><p>Rs. {cart.reduce((sum, product) => sum + product.finalPrice, 0).toFixed(2)}</p></aside></Container></section>
       <section className="shop-products"><Container fluid="xl">
-        {cart.length > 0 && <aside className="shop-cart-items" aria-label="Shopping cart"><h2>Your Cart</h2><div>{cart.map((product, index) => <article key={`${product._id}-${index}`}><ProductImage src={productImages(product)[0]} alt={product.name} /><span><strong>{product.name}</strong><small>Rs. {Number(product.finalPrice).toFixed(2)}</small></span><button type="button" onClick={() => setSelectedProduct(product)}>View Photos</button><button type="button" className="cart-remove" onClick={() => removeFromCart(index)} aria-label={`Remove ${product.name} from cart`}>Remove</button></article>)}</div></aside>}
+        {cart.length > 0 && <aside className="shop-cart-items" aria-label="Shopping cart"><h2>Your Cart</h2><div>{cart.map((product, index) => <article key={`${product._id}-${index}`}><ProductImage src={productImages(product)[0]} alt={product.name} /><span><strong>{product.name}</strong><small>Rs. {Number(product.finalPrice).toFixed(2)}</small></span><button type="button" onClick={() => setSelectedProduct(product)}>View Details</button><button type="button" className="cart-remove" onClick={() => removeFromCart(index)} aria-label={`Remove ${product.name} from cart`}>Remove</button></article>)}</div></aside>}
         <nav className="shop-category-nav"><button className={!category ? 'active' : ''} onClick={() => setCategory('')}>All</button>{categories.map((item) => <button className={category === item ? 'active' : ''} key={item} onClick={() => setCategory(item)}>{item}</button>)}</nav>
         <div className="shop-filters"><input type="search" placeholder="Search products" value={search} onChange={(event) => setSearch(event.target.value)} /><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="newest">Newest</option><option value="priceAsc">Price Low to High</option><option value="priceDesc">Price High to Low</option><option value="discount">Highest Discount</option></select><select value={brand} onChange={(event) => setBrand(event.target.value)}><option value="">All Brands</option>{brands.map((item) => <option key={item}>{item}</option>)}</select><select value={delivery} onChange={(event) => setDelivery(event.target.value)}><option value="">All Delivery</option><option value="fast">Fast Delivery</option><option value="smooth">Smooth Delivery</option></select><input type="number" placeholder="Min price" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} /><input type="number" placeholder="Max price" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} /></div>
         {loading ? <div className="shop-state"><Spinner animation="border" /> Loading products...</div> : error ? <div className="alert alert-danger">{error}</div> : !visible.length ? <div className="shop-state">No products match these filters.</div> : (
           <div className="shop-product-grid">{visible.map((product) => {
             const mainImage = productImages(product)[0];
-            return <article className="shop-product-card" key={product._id} role="button" tabIndex="0" onClick={() => setSelectedProduct(product)} onKeyDown={(event) => event.key === 'Enter' && setSelectedProduct(product)}><ProductImage className="shop-product-image" src={mainImage} alt={product.name} /><div className="shop-product-card__body"><span className="shop-product-card__type">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="delivery-badges">{product.fastDelivery && <span>Fast Delivery</span>}{product.smoothDelivery && <span>Smooth Delivery</span>}</div><div className="product-prices"><del>Rs. {product.price}</del><span>{product.discount}% off</span><strong>Rs. {product.finalPrice}</strong></div><div className="product-actions" onClick={(event) => event.stopPropagation()}><button onClick={() => addToCart(product)}>Add to Cart</button><button onClick={() => setSelectedProduct(product)}>View Photos</button><Link to="/ecommerce-orders" state={{ product }}>Buy Now</Link></div></div></article>;
+            return <article className="shop-product-card" key={product._id} role="button" tabIndex="0" onClick={() => setSelectedProduct(product)} onKeyDown={(event) => event.key === 'Enter' && setSelectedProduct(product)}><ProductImage className="shop-product-image" src={mainImage} alt={product.name} /><div className="shop-product-card__body"><span className="shop-product-card__type">{product.category}</span><h3>{product.name}</h3><p>{product.description}</p><div className="delivery-badges">{product.fastDelivery && <span>Fast Delivery</span>}{product.smoothDelivery && <span>Smooth Delivery</span>}</div><div className="product-prices"><del>Rs. {product.price}</del><span>{product.discount}% off</span><strong>Rs. {product.finalPrice}</strong></div><div className="product-actions" onClick={(event) => event.stopPropagation()}><button onClick={() => addToCart(product)}>buy later</button><button onClick={() => setSelectedProduct(product)}>View Details</button><Link to="/ecommerce-orders" state={{ product }}>Buy Now</Link></div></div></article>;
           })}</div>
         )}
       </Container></section>

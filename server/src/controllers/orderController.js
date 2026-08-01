@@ -4,6 +4,7 @@ import Product from '../model/productModel.js';
 export async function createOrder(req,res,next) { try {
   const { productId, quantity = 1, name, email, phone, address, paymentMode } = req.body;
   if (![productId,name,email,phone,address,paymentMode].every((value)=>String(value || '').trim())) return res.status(400).json({success:false,message:'Complete all checkout details.'});
+  if (paymentMode !== 'COD') return res.status(409).json({success:false,message:'UPI and Card payments are coming soon. Please use Cash on Delivery.'});
   if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({success:false,message:'Enter a valid email.'});
   if (!/^[+\d][\d\s-]{7,14}$/.test(phone)) return res.status(400).json({success:false,message:'Enter a valid phone number.'});
   const product = await Product.findById(productId); if (!product || !product.status) return res.status(404).json({success:false,message:'Product is unavailable.'});

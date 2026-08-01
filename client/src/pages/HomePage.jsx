@@ -18,7 +18,7 @@ export default function HomePage({ categories }) {
 
   return (
     <>
-      <section className="home-hero">
+      {/*<section className="home-hero">
         <Container fluid="xl">
           <div className="home-hero__content">
             <span className="home-hero__label">All Education Centers</span>
@@ -30,7 +30,7 @@ export default function HomePage({ categories }) {
            
           </div>
         </Container>
-      </section>
+      </section>*/}
 
       <section className="category-section category-section--all py-5">
         <Container fluid="xl">

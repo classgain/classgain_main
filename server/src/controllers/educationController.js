@@ -102,7 +102,7 @@ function buildPublicItemFromProfile(profile) {
     profileImage: profile.profileImage || galleryImages[1]?.image || image,
     thumbnail: image,
     videoUrl: profile.promoVideoUrl || videoItems[0]?.videoUrl || '',
-    mediaType: 'Image & Video',
+    mediaType: 'view Image & Video',
     badge: `${profile.courseType} Center`,
     courseCount: courses.length || profile.courseCount || courseNames.length,
     courseList: courseNames.join(', '),

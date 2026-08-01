@@ -90,9 +90,9 @@ const fallbackStudent = {
     { id: 'story-2', title: 'Certificate shared', mediaType: 'certificate', mediaUrl: '', timeLabel: 'Yesterday' }
   ],
   applicationStatuses: [
-    { id: 'application-1', college: 'CMS College', course: 'B.Sc Computer Science', status: 'Under Review', updatedLabel: 'Updated today' },
+   {/* { id: 'application-1', college: '', course: 'B.Sc Computer Science', status: 'Under Review', updatedLabel: 'Updated today' },
     { id: 'application-2', college: 'Livewire Training Center', course: 'Full Stack Development', status: 'Applied', updatedLabel: 'Updated yesterday' }
-  ]
+    */} ]
 };
 
 const initialAuthForm = {
@@ -835,22 +835,22 @@ export default function LoginPage() {
 
             <div className="student-auth-metrics">
               <article className="student-auth-metric">
-                <strong>{accessMode === 'buyer' ? '100%' : '4'}</strong>
-                <span>{accessMode === 'buyer' ? 'Order focused' : 'Learning sections'}</span>
+                <strong>{accessMode === 'buyer' ? '100%' : 'learner & parents'}</strong>
+                <span>{accessMode === 'buyer' ? 'Order focused' : 'Feature-vision'}</span>
               </article>
               <article className="student-auth-metric">
                 <strong>24/7</strong>
                 <span>Dashboard access</span>
               </article>
               <article className="student-auth-metric">
-                <strong>MongoDB</strong>
-                <span>{accessMode === 'buyer' ? 'Saved order data' : 'Saved student data'}</span>
+                <strong>100 %</strong>
+                <span>{accessMode === 'buyer' ? 'Saved order data' : 'ClassGain trusted'}</span>
               </article>
             </div>
 
             <div className="student-auth-highlights">
               <div className="student-auth-highlight">
-                <strong>{accessMode === 'buyer' ? 'Private order access' : 'Secure student API'}</strong>
+                <strong>{accessMode === 'buyer' ? 'Private order access' : 'Secure student Details'}</strong>
                 <span>
                   {accessMode === 'buyer'
                     ? 'Only orders connected to your signed-in account are displayed.'
@@ -1007,7 +1007,7 @@ export default function LoginPage() {
       <div className="dashboard-page__hero">
         <div>
           <span className="dashboard-page__eyebrow">Student Dashboard</span>
-          <h1 className="dashboard-page__title">Welcome, {resolvedStudent.firstName}</h1>
+          <h1 className="dashboard-page__title">Welcome to, {resolvedStudent.firstName}</h1>
           <p className="dashboard-page__text">
             Your profile, certificate uploads, courses, friends, stories, discussions, and college apply status are connected to the student login API.
           </p>

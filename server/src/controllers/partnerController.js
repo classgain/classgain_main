@@ -1075,8 +1075,15 @@ export async function updateEducationCenterCourse(req, res) {
     }
 
     const currentCourse = profile.courses[courseIndex];
-    profile.courses[courseIndex] = {
-      ...currentCourse,
+    const nextStatus = req.body.status
+      ? normalizeCourseStatus(req.body.status)
+      : currentCourse.status;
+
+    // `currentCourse` is a Mongoose subdocument. Spreading it into a new object
+    // drops schema fields such as id and name, which makes profile.save() fail
+    // validation. Update the existing subdocument so all course fields remain
+    // intact and Mongoose tracks the changed status correctly.
+    currentCourse.set({
       name: normalizeOptionalText(req.body.name, currentCourse.name),
       duration: normalizeOptionalText(req.body.duration, currentCourse.duration),
       intake: normalizePositiveNumber(
@@ -1084,14 +1091,16 @@ export async function updateEducationCenterCourse(req, res) {
         normalizePositiveNumber(currentCourse.intake, 60)
       ),
       fee: normalizeOptionalText(req.body.fee, currentCourse.fee),
-      status: req.body.status ? normalizeCourseStatus(req.body.status) : currentCourse.status
-    };
+      status: nextStatus
+    });
 
     await saveEducationCenterProfile(profile, partner);
 
     return res.json({
       success: true,
-      message: 'Course updated successfully.',
+      message: req.body.status
+        ? `Course ${nextStatus === 'Active' ? 'activated' : 'inactivated'} successfully.`
+        : 'Course updated successfully.',
       course: profile.courses[courseIndex],
       dashboard: buildDashboardPayload(partner, profile.toObject())
     });
