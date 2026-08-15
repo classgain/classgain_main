@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const educationCenterStatusValues = ['Pending', 'Approved', 'Held', 'Rejected'];
+export const educationCenterStatusValues = ['Pending', 'Approved', 'Held', 'Rejected', 'Deleted'];
 export const educationCenterCategoryValues = ['School', 'College', 'Coaching Center'];
 
 const educationCenterSchema = new mongoose.Schema(

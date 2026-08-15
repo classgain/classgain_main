@@ -13,6 +13,11 @@ import { deleteStoredFile, storeUploadedFile } from '../utils/mediaStorage.js';
 import { createPartnerToken } from '../utils/partnerToken.js';
 
 const PENDING_APPROVAL_MESSAGE = 'Your account is pending admin approval.';
+const ACCOUNT_STATUS_MESSAGES = {
+  Held: 'Your account is currently on hold. Please contact support.',
+  Rejected: 'Your registration was not approved. Please contact support.',
+  Deleted: 'Your account has been deleted. Please contact support.'
+};
 const MAX_REGISTRATION_FILE_BYTES = 100 * 1024 * 1024;
 
 function dataUrlByteSize(value = '') {
@@ -273,33 +278,6 @@ async function upsertApprovedPartnerAndProfile(center) {
   return { partner, profile };
 }
 
-async function removeEducationCenterArtifacts(center) {
-  const partner = await EducationPartner.findOne({ officialEmail: center.email }).lean();
-
-  await removeEducationCenterPublicArtifacts(center);
-
-  if (partner) {
-    await EducationPartner.deleteOne({ _id: partner._id });
-  }
-}
-
-async function removeEducationCenterPublicArtifacts(center) {
-  const partner = await EducationPartner.findOne({ officialEmail: center.email }).lean();
-  const profileQuery = partner ? { partnerId: partner._id } : { contactEmail: center.email };
-  const profiles = await EducationCenterUpload.find(profileQuery).select('_id').lean();
-  const publicItemIds = profiles.map((profile) => `db-center-${profile._id}`);
-
-  if (publicItemIds.length) {
-    await EducationItem.deleteMany({ id: { $in: publicItemIds } });
-  }
-
-  if (partner) {
-    await EducationCenterUpload.deleteMany({ partnerId: partner._id });
-  } else {
-    await EducationCenterUpload.deleteMany({ contactEmail: center.email });
-  }
-}
-
 async function hideEducationCenterPublicItems(center) {
   const partner = await EducationPartner.findOne({ officialEmail: center.email }).lean();
   const profileQuery = partner ? { partnerId: partner._id } : { contactEmail: center.email };
@@ -525,7 +503,10 @@ export async function loginEducationCenter(req, res, next) {
     }
 
     if (center.status !== 'Approved') {
-      return res.status(403).json({ success: false, message: PENDING_APPROVAL_MESSAGE });
+      return res.status(403).json({
+        success: false,
+        message: ACCOUNT_STATUS_MESSAGES[center.status] || PENDING_APPROVAL_MESSAGE
+      });
     }
 
     const passwordMatches = await bcrypt.compare(password, center.password_hash);
@@ -687,18 +668,23 @@ export async function pendEducationCenter(req, res, next) {
 
 export async function deleteEducationCenter(req, res, next) {
   try {
-    const center = await EducationCenter.findById(req.params.id);
+    const center = await EducationCenter.findByIdAndUpdate(
+      req.params.id,
+      { status: 'Deleted' },
+      { new: true, runValidators: true }
+    );
 
     if (!center) {
       return res.status(404).json({ success: false, message: 'Education center not found.' });
     }
 
-    await removeEducationCenterArtifacts(center);
-    await center.deleteOne();
+    await hideEducationCenterPublicItems(center);
+    await upsertPendingPartner(center);
 
     return res.json({
       success: true,
-      message: 'Education center deleted successfully.'
+      message: 'Education center moved to deleted accounts.',
+      educationCenter: serializeEducationCenter(center, { includeDocuments: true })
     });
   } catch (error) {
     return next(error);

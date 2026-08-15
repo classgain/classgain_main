@@ -94,6 +94,46 @@ const date = (value) =>
       )
     : "-";
 
+const educationCenterViews = [
+  { value: "All", label: "All accounts" },
+  { value: "Pending", label: "Pending approval" },
+  { value: "Approved", label: "Approved accounts" },
+  { value: "Held", label: "Hold accounts" },
+  { value: "Deleted", label: "Deleted accounts" },
+];
+
+function centerBadgeVariant(status) {
+  if (status === "Approved") return "success";
+  if (["Rejected", "Deleted"].includes(status)) return "danger";
+  if (status === "Held") return "secondary";
+  return "warning";
+}
+
+function EducationCenterDocument({ label, value }) {
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const url = resolveMediaUrl(value);
+
+  if (!url) {
+    return (
+      <div className="admin-proof-card admin-proof-card--missing">
+        <div className="admin-proof-card__placeholder">No file</div>
+        <span><strong>{label}</strong><small>Not uploaded</small></span>
+      </div>
+    );
+  }
+
+  return (
+    <a className="admin-proof-card" href={url} target="_blank" rel="noreferrer">
+      {previewFailed ? (
+        <div className="admin-proof-card__placeholder">Open file</div>
+      ) : (
+        <img src={url} alt={`${label} preview`} onError={() => setPreviewFailed(true)} />
+      )}
+      <span><strong>{label}</strong><small>View full document</small></span>
+    </a>
+  );
+}
+
 function EducationCenters({ notify }) {
   const [items, setItems] = useState([]),
     [loading, setLoading] = useState(true),
@@ -109,7 +149,7 @@ function EducationCenters({ notify }) {
     load();
   }, []);
   const action = async (id, type) => {
-    if (type === "delete" && !confirm("Delete this education center?")) return;
+    if (type === "delete" && !confirm("Move this education center to deleted accounts?")) return;
     try {
       const d = await request(
         `/admin/education-center/${id}${type === "delete" ? "" : `/${type}`}`,
@@ -117,8 +157,8 @@ function EducationCenters({ notify }) {
       );
       notify("success", d.message);
       const changed = d.educationCenter;
-      setItems((current) => type === "delete" ? current.filter((item) => item.id !== id) : current.map((item) => item.id === id && changed ? changed : item));
-      setSelected((current) => current?.id === id ? (type === "delete" ? null : changed || current) : current);
+      setItems((current) => current.map((item) => item.id === id && changed ? changed : item));
+      setSelected((current) => current?.id === id ? changed || current : current);
     } catch (e) {
       notify("error", e.message);
     }
@@ -156,23 +196,18 @@ function EducationCenters({ notify }) {
           <Spinner animation="border" />
         ) : (
           <>
-            <div className="admin-metrics">
-              <article>
-                <span>Total Centers</span>
-                <strong>{items.length}</strong>
-                <p>All registration requests</p>
-              </article>
-              <article>
-                <span>Pending</span>
-                <strong>{count("Pending")}</strong>
-                <p>Waiting for admin review</p>
-              </article>
-              <article>
-                <span>Approved</span>
-                <strong>{count("Approved")}</strong>
-                <p>Visible to clients</p>
-              </article>
-              <article><span>On Hold</span><strong>{count("Held")}</strong><p>Account access paused</p></article>
+            <div className="admin-center-status-nav" aria-label="Education center account views">
+              {educationCenterViews.map((view) => (
+                <button
+                  type="button"
+                  className={status === view.value ? "active" : ""}
+                  key={view.value}
+                  onClick={() => setStatus(view.value)}
+                >
+                  <span>{view.label}</span>
+                  <strong>{view.value === "All" ? items.length : count(view.value)}</strong>
+                </button>
+              ))}
             </div>
             <div className="admin-toolbar">
               <div>
@@ -187,58 +222,43 @@ function EducationCenters({ notify }) {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </label>
-              <label>
-                <span>Status</span>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  {["All", "Pending", "Approved", "Held", "Rejected"].map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
-              </label>
             </div>
-            <Table
-              headers={[
-                "Education Center Name",
-                "Category",
-                "Phone",
-                "Email",
-                "Status",
-                "Created Date",
-                "Actions",
-              ]}
-              rows={visible.map((x) => [
-                x.educationCenterName,
-                x.category,
-                x.phone,
-                x.email,
-                <Badge
-                  bg={
-                    x.status === "Approved"
-                      ? "success"
-                      : x.status === "Rejected"
-                        ? "danger"
-                        : "warning"
-                  }
-                >
-                  {x.status}
-                </Badge>,
-                date(x.createdAt),
-                <Actions>
-                  <button onClick={() => setSelected(x)}>View</button>
-                  <label className="admin-status-toggle"><input type="checkbox" checked={x.status === "Approved"} onChange={(event) => action(x.id, event.target.checked ? "approve" : "pending")}/><span>Pending to approval</span></label>
-                  <label className="admin-status-toggle admin-status-toggle--hold"><input type="checkbox" checked={x.status === "Held"} onChange={(event) => action(x.id, event.target.checked ? "hold" : "approve")}/><span>Account hold</span></label>
-                  <button
-                    className="danger"
-                    onClick={() => action(x.id, "delete")}
-                  >
-                    Delete
-                  </button>
-                </Actions>,
-              ])}
-            />
+            {visible.length ? (
+              <div className="education-approval-grid">
+                {visible.map((center) => (
+                  <article className="education-approval-card" key={center.id}>
+                    <header>
+                      <div>
+                        <span>{center.category}</span>
+                        <h2>{center.educationCenterName}</h2>
+                      </div>
+                      <Badge bg={centerBadgeVariant(center.status)}>{center.status}</Badge>
+                    </header>
+                    <div className="education-approval-card__contact">
+                      <p><strong>{center.ownerName}</strong><span>Owner</span></p>
+                      <p><strong>{center.email}</strong><span>{center.phone}</span></p>
+                      <p><strong>{[center.city, center.state].filter(Boolean).join(", ")}</strong><span>Submitted {date(center.createdAt)}</span></p>
+                    </div>
+                    <div className="education-approval-card__documents">
+                      <EducationCenterDocument label="Registration certificate" value={center.registrationCertificate} />
+                      <EducationCenterDocument label="ID proof" value={center.idProof} />
+                    </div>
+                    <Actions>
+                      <button onClick={() => setSelected(center)}>Review account</button>
+                      {center.status === "Deleted" ? (
+                        <button onClick={() => action(center.id, "pending")}>Restore to pending</button>
+                      ) : (
+                        <>
+                          <button onClick={() => action(center.id, center.status === "Approved" ? "pending" : "approve")}>{center.status === "Approved" ? "Move to pending" : "Approve account"}</button>
+                          <button onClick={() => action(center.id, center.status === "Held" ? "pending" : "hold")}>{center.status === "Held" ? "Release hold" : "Hold account"}</button>
+                          <button className="danger" onClick={() => action(center.id, "delete")}>Delete account</button>
+                        </>
+                      )}
+                    </Actions>
+                  </article>
+                ))}
+              </div>
+            ) : <div className="admin-empty-state">No accounts found in this view.</div>}
             {selected && (
               <div className="admin-modal-backdrop" onMouseDown={() => setSelected(null)}>
               <section className="admin-detail-panel admin-detail-modal" onMouseDown={(event) => event.stopPropagation()}>
@@ -247,9 +267,7 @@ function EducationCenters({ notify }) {
                     <span>Selected Center</span>
                     <h2>{selected.educationCenterName}</h2>
                   </div>
-                  <Badge
-                    bg={selected.status === "Approved" ? "success" : "warning"}
-                  >
+                  <Badge bg={centerBadgeVariant(selected.status)}>
                     {selected.status}
                   </Badge>
                   <button onClick={() => setSelected(null)}>Close</button>
@@ -289,7 +307,23 @@ function EducationCenters({ notify }) {
                     <strong>{selected.username}</strong>
                   </div>
                 </div>
-                <div className="admin-popup-actions"><button onClick={() => action(selected.id, selected.status === "Approved" ? "pending" : "approve")}>{selected.status === "Approved" ? "Move to Pending" : "Approve and publish"}</button><button onClick={() => action(selected.id, selected.status === "Held" ? "approve" : "hold")}>{selected.status === "Held" ? "Release account" : "Hold account"}</button><button className="danger" onClick={() => action(selected.id,"delete")}>Delete</button></div>
+                <h3 className="admin-proof-heading">Seller documents</h3>
+                <div className="education-approval-card__documents education-approval-card__documents--detail">
+                  <EducationCenterDocument key={`${selected.id}-registration`} label="Registration certificate" value={selected.registrationCertificate} />
+                  <EducationCenterDocument key={`${selected.id}-id`} label="ID proof" value={selected.idProof} />
+                  <EducationCenterDocument key={`${selected.id}-address`} label="Address proof" value={selected.addressProof} />
+                </div>
+                <div className="admin-popup-actions">
+                  {selected.status === "Deleted" ? (
+                    <button onClick={() => action(selected.id, "pending")}>Restore to pending</button>
+                  ) : (
+                    <>
+                      <button onClick={() => action(selected.id, selected.status === "Approved" ? "pending" : "approve")}>{selected.status === "Approved" ? "Move to Pending" : "Approve and publish"}</button>
+                      <button onClick={() => action(selected.id, selected.status === "Held" ? "pending" : "hold")}>{selected.status === "Held" ? "Release account" : "Hold account"}</button>
+                      <button className="danger" onClick={() => action(selected.id,"delete")}>Delete account</button>
+                    </>
+                  )}
+                </div>
               </section>
               </div>
             )}
