@@ -5,7 +5,7 @@ const contactItems = [
   {
     title: 'Contact Email',
     value: 'helpclassgain@gmail.com',
-    note: 'Send your questions any time and our classGain team will reply.'
+    note: 'Send your questions any time and our ClassGain team will reply.'
   },
   {
     title: 'Contact Number', 
@@ -73,8 +73,8 @@ export default function HelpCenterPage() {
         <div className="container-xl">
           <div className="help-center-stack">
             <div className="help-center-form-card help-center-form-card--full">
-              <span className="help-center-panel__eyebrow">Contact Form</span>
-              <h2>Send your question to the classGain team</h2>
+              <span className="help-center-panel__eyebrow">Contact Support Team</span>
+              <h2>Send your question to the ClassGain team</h2>
               <p className="help-center-form-card__text">
                 Write your message here first. Our support team will review your question and contact you with the next
                 help step.
@@ -135,7 +135,7 @@ export default function HelpCenterPage() {
            
             <div className="help-center-panel help-center-panel--wide">
               <span className="help-center-panel__eyebrow">Support Team</span>
-              <h2>How the classGain team helps you</h2>
+              <h2>How the ClassGain team helps you</h2>
               <p>
                 Our team helps students, parents, and education centers understand admissions, login problems, learning
                 pages, purchase options, and registration support in one place.
