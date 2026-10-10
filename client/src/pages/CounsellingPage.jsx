@@ -20,7 +20,7 @@ export default function CounsellingPage() {
              <img
                 src={counsellingImage}
                 alt="class-Gain support team"
-                className="help-team-visual__image" 
+                className="counselling-visual__image" 
               />
             <span className="counselling-card__eyebrow">Easy Guidance</span>
             <h2>What to fill in this counselling form</h2>
